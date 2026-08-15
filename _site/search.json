@@ -12,5 +12,19 @@
     "title": "About",
     "section": "",
     "text": "About this site\n\n1 + 1\n\n[1] 2"
+  },
+  {
+    "objectID": "Hands_on_Ex/Hands-on-Ex1.html",
+    "href": "Hands_on_Ex/Hands-on-Ex1.html",
+    "title": "Hands-on Exeercise 1",
+    "section": "",
+    "text": "This is my first hands on exercise\n\n\nWe will load both sf and tidyverse R packages onto RStudio environment.\n\npacman::p_load(sf, tidyverse)"
+  },
+  {
+    "objectID": "Hands_on_Ex/Hands-on-Ex1.html#getting-started",
+    "href": "Hands_on_Ex/Hands-on-Ex1.html#getting-started",
+    "title": "Hands-on Exeercise 1",
+    "section": "",
+    "text": "This is my first hands on exercise\n\n\nWe will load both sf and tidyverse R packages onto RStudio environment.\n\npacman::p_load(sf, tidyverse)"
   }
 ]

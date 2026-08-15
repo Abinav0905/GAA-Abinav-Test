@@ -1,0 +1,14 @@
+---
+title: "Hands-on Exeercise 1"
+---
+## Getting Started
+
+This is my first hands on exercise
+
+### Loading the necessary R packages
+
+We will load both sf and tidyverse R packages onto RStudio environment.
+
+```{r}
+pacman::p_load(sf, tidyverse)
+```

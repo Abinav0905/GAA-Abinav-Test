@@ -5,6 +5,11 @@ website:
   title: "GAA-Abinav-Test"
   navbar:
     left:
+      - text: Hands-on Exercise
+        menu:
+        - text: Exercise 1
+          href: Hands_ on_Ex/ Hands-on-Ex1.html
+    right:
       - href: index.qmd
         text: Home
       - about.qmd
@@ -16,6 +21,7 @@ format:
       - brand
     css: styles.css
     toc: true
+    
 
 editor: visual
 
