@@ -26,5 +26,12 @@
     "title": "Hands-on Exeercise 1",
     "section": "",
     "text": "This is my first hands on exercise\n\n\nWe will load both sf and tidyverse R packages onto RStudio environment.\n\npacman::p_load(sf, tidyverse)"
+  },
+  {
+    "objectID": "Hands_on_Ex/Hands-on-Ex1.html#importing-data",
+    "href": "Hands_on_Ex/Hands-on-Ex1.html#importing-data",
+    "title": "Hands-on Exeercise 1",
+    "section": "Importing data",
+    "text": "Importing data"
   }
 ]
