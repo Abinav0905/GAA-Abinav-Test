@@ -1,0 +1,220 @@
+---
+title: "Hands-on Exercise 2: Thematic Mapping and GeoVisualisation with R"
+author: "Abinav"
+date: "today"
+execute:
+  warning: false
+---
+
+```{r}
+pacman::p_load(sf, terra, spatstat, 
+               tmap, rvest, tidyverse)
+```
+
+```{r}
+mpsz_sf = st_read("data/geospatial/MasterPlan2019SubzoneBoundaryNoSeaGEOJSON.geojson") %>%
+  st_zm(drop = TRUE, what = "ZM") %>%
+  st_transform(crs = 3414)
+
+childcare_sf = st_read("data/aspatial/ChildCareServices.geojson") %>%
+  st_zm(drop = TRUE, what = "ZM") %>%
+  st_transform(crs = 3414)
+```
+
+```{r}
+glimpse(mpsz_sf)
+glimpse(childcare_sf)
+```
+
+```{r}
+mpsz_cl = mpsz_sf %>%
+  filter(SUBZONE_N != "SOUTHERN GROUP",
+         PLN_AREA_N != "WESTERN ISLANDS",
+         PLN_AREA_N != "NORTH-EASTERN ISLANDS")
+```
+
+```{r}
+write_rds(mpsz_cl, "data/rds/mpsz_cl.rds")
+```
+
+```{r}
+plot(st_geometry(mpsz_cl))
+plot(st_geometry(childcare_sf), add = TRUE, col = "red", pch = 19, cex = 0.5)
+```
+
+```{r}
+childcare_ppp = as.ppp(childcare_sf)
+class(childcare_ppp)
+summary(childcare_ppp)
+```
+
+```{r}
+sg_owin = as.owin(mpsz_cl)
+class(sg_owin)
+plot(sg_owin)
+```
+
+```{r}
+childcareSG_ppp = childcare_ppp[sg_owin]
+childcareSG_ppp
+```
+
+```{r}
+clarkevans.test(childcareSG_ppp,
+                correction="none",
+                clipregion="sg_owin",
+                alternative=c("clustered"))
+```
+
+```{r}
+clarkevans.test(childcareSG_ppp,
+                correction="none",
+                clipregion="sg_owin",
+                alternative=c("clustered"),
+                method="MonteCarlo",
+                nsim=99)
+```
+
+```{r}
+kde_SG_diggle = density(
+  childcareSG_ppp,
+  sigma=bw.diggle,
+  edge=TRUE,
+  kernel="gaussian")
+
+plot(kde_SG_diggle)
+```
+
+```{r}
+summary(kde_SG_diggle)
+```
+
+```{r}
+bw = bw.diggle(childcareSG_ppp)
+bw
+```
+
+```{r}
+childcareSG_ppp_km = rescale.ppp(
+  childcareSG_ppp, 1000, "km")
+
+kde_childcareSG_km = density(childcareSG_ppp_km,
+                              sigma=bw.diggle,
+                              edge=TRUE,
+                              kernel="gaussian")
+
+plot(kde_childcareSG_km)
+```
+
+```{r}
+bw.CvL(childcareSG_ppp_km)
+bw.scott(childcareSG_ppp_km)
+bw.ppl(childcareSG_ppp_km)
+bw.diggle(childcareSG_ppp_km)
+```
+
+```{r}
+kde_childcareSG.ppl = density(childcareSG_ppp_km, 
+                               sigma=bw.ppl, 
+                               edge=TRUE,
+                               kernel="gaussian")
+par(mfrow=c(1,2))
+plot(kde_childcareSG_km, main = "bw.diggle")
+plot(kde_childcareSG.ppl, main = "bw.ppl")
+```
+
+```{r}
+par(mar = c(2,2,2,2))
+par(mfrow=c(2,2))
+plot(density(childcareSG_ppp_km, 
+             sigma=0.2959712, 
+             edge=TRUE, 
+             kernel="gaussian"), 
+     main="Gaussian")
+plot(density(childcareSG_ppp_km, 
+             sigma=0.2959712, 
+             edge=TRUE, 
+             kernel="epanechnikov"), 
+     main="Epanechnikov")
+plot(density(childcareSG_ppp_km, 
+             sigma=0.2959712, 
+             edge=TRUE, 
+             kernel="quartic"), 
+     main="Quartic")
+plot(density(childcareSG_ppp_km, 
+             sigma=0.2959712, 
+             edge=TRUE, 
+             kernel="disc"), 
+     main="Disc")
+```
+
+```{r}
+kde_childcareSG_fb = density(childcareSG_ppp_km,
+                              sigma=0.6, 
+                              edge=TRUE,
+                              kernel="gaussian")
+plot(kde_childcareSG_fb)
+```
+
+```{r}
+kde_childcareSG_ab = adaptive.density(
+  childcareSG_ppp_km, 
+  method="kernel")
+plot(kde_childcareSG_ab)
+```
+
+```{r}
+par(mfrow=c(1,2))
+plot(kde_childcareSG_fb, main = "Fixed bandwidth")
+plot(kde_childcareSG_ab, main = "Adaptive bandwidth")
+```
+
+```{r}
+kde_childcareSG_bw_terra = rast(kde_childcareSG_km)
+class(kde_childcareSG_bw_terra)
+```
+
+```{r}
+kde_childcareSG_bw_terra
+```
+
+```{r}
+crs(kde_childcareSG_bw_terra) = "EPSG:3414"
+kde_childcareSG_bw_terra
+```
+
+```{r}
+tm_shape(kde_childcareSG_bw_terra) + 
+  tm_raster(col.scale = 
+              tm_scale_continuous(
+                values = "viridis"),
+            col.legend = tm_legend(
+            title = "Density values",
+            title.size = 0.7,
+            text.size = 0.7,
+            bg.color = "white",
+            bg.alpha = 0.7,
+            position = tm_pos_in(
+              "right", "bottom"),
+            frame = TRUE)) +
+  tm_graticules(labels.size = 0.7) +
+  tm_compass() +
+  tm_layout(scale = 1.0)
+```
+
+```{r}
+pg = mpsz_cl %>%
+  filter(PLN_AREA_N == "PUNGGOL")
+tm = mpsz_cl %>%
+  filter(PLN_AREA_N == "TAMPINES")
+ck = mpsz_cl %>%
+  filter(PLN_AREA_N == "CHOA CHU KANG")
+jw = mpsz_cl %>%
+  filter(PLN_AREA_N == "JURONG WEST")
+par(mar = c(2,2,2,2))
+par(mfrow=c(2,2))
+plot(st_geometry(pg), main = "Ponggol")
+plot(st_geometry(tm), main = "Tampines")
+plot(st_geometry(ck), main = "Choa Chu Kang")
+plot(st_geometry(jw), main = "Jurong West")
+```
