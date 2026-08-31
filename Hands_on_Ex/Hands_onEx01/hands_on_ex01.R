@@ -1,10 +1,10 @@
 install.packages("pacman")
 pacman::p_load(sf, tidyverse)
-mpsz = st_read("data/geospatial/MasterPlan2014SubzoneBoundaryNoSea.geojson")
+mpsz = st_read("Hands_on_Ex/Hands_onEx01/data/geospatial/MasterPlan2014SubzoneBoundaryNoSea.geojson")
 
-cyclingpath = st_read("data/geospatial/CyclingPathGazette.shp")
+cyclingpath = st_read("Hands_on_Ex/Hands_onEx01/data/geospatial/CyclingPathGazette.shp")
 
-preschool = st_read("data/geospatial/PreSchoolsLocation.geojson")
+preschool = st_read("Hands_on_Ex/Hands_onEx01/data/geospatial/PreSchoolsLocation.geojson")
 
 st_geometry(mpsz)
 glimpse(mpsz)
@@ -28,7 +28,7 @@ plot(st_geometry(mpsz))
 plot(st_geometry(preschool), add = TRUE)
 
 
-listings = read_csv("data/aspatial/listings.csv")
+listings = read_csv("Hands_on_Ex/Hands_onEx01/data/aspatial/listings.csv")
 list(listings)
 
 listings_sf <- st_as_sf(listings, 
@@ -89,7 +89,8 @@ ggplot(data = mpsz,
        y = "Pre-school count")
 
 
-mpsz = st_read("data/geospatial/MasterPlan2019PlanningAreaBoundaryNoSea.geojson") %>%
+mpsz = st_read("Hands_on_Ex/Hands_onEx01/data/geospatial/MasterPlan2019PlanningAreaBoundaryNoSea.geojson") %>%
   st_transform(crs = 3414)
 
 glimpse(mpsz)
+
