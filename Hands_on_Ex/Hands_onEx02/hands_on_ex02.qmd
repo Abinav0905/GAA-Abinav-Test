@@ -65,6 +65,7 @@ clarkevans.test(childcareSG_ppp,
                 clipregion="sg_owin",
                 alternative=c("clustered"))
 ```
+The result here is clear, R is under 1, meaning the childcare centres are clustered rather than spread out randomly. Not surprising when you think about it, since childcare centres tend to open up near where families actually live, so they naturally bunch up around residential estates.
 
 ```{r}
 clarkevans.test(childcareSG_ppp,
@@ -74,6 +75,7 @@ clarkevans.test(childcareSG_ppp,
                 method="MonteCarlo",
                 nsim=99)
 ```
+Same conclusion holds even with the Monte Carlo simulation approach - p value is still well under 0.05, so we can be confident this clustering isn't just random noise.
 
 ```{r}
 kde_SG_diggle = density(
@@ -112,6 +114,7 @@ bw.scott(childcareSG_ppp_km)
 bw.ppl(childcareSG_ppp_km)
 bw.diggle(childcareSG_ppp_km)
 ```
+Each method gives a pretty different bandwidth value, which honestly makes sense once you realize they're each making a different tradeoff between smoothness and detail. bw.diggle tends to zoom in more on tight clusters, while the others smooth things out more.
 
 ```{r}
 kde_childcareSG.ppl = density(childcareSG_ppp_km, 
@@ -147,6 +150,8 @@ plot(density(childcareSG_ppp_km,
              kernel="disc"), 
      main="Disc")
 ```
+Not a huge visual difference between the four kernel shapes here - gaussian is the default for a reason, it gives a nice smooth result without looking too blocky or too sharp.
+
 
 ```{r}
 kde_childcareSG_fb = density(childcareSG_ppp_km,
@@ -168,6 +173,7 @@ par(mfrow=c(1,2))
 plot(kde_childcareSG_fb, main = "Fixed bandwidth")
 plot(kde_childcareSG_ab, main = "Adaptive bandwidth")
 ```
+The adaptive version does a better job in areas where childcare centres are really tightly packed - it picks up on local density changes that the fixed bandwidth just smooths over.
 
 ```{r}
 kde_childcareSG_bw_terra = rast(kde_childcareSG_km)
@@ -313,6 +319,8 @@ plot(density(childcare_bs_ppp.km,
      main="Bishan")
 ```
 
+Added Bishan into the mix just to see another area beyond the four in the writeup - good to compare how density patterns differ across neighbourhoods with different housing types.
+
 ```{r}
 kde_childcareSG.cvl = density(childcareSG_ppp_km, 
                                sigma=bw.CvL, 
@@ -343,6 +351,8 @@ tm_shape(kde_childcareSG_bw_terra) +
   tm_compass() +
   tm_layout(scale = 1.0)
 ```
+
+Just swapped the colour scheme here to see how it changes readability - viridis feels a bit easier to read for density gradients since it's perceptually uniform, but reds might work better if you're trying to draw attention to "hot" areas specifically.
 
 ```{r}
 set.seed(1234)
@@ -384,6 +394,8 @@ plot(density(childcare_ck_ppp.km,
      main="Fixed (bw.diggle)")
 plot(kde_ck_adaptive, main="Adaptive")
 ```
+Zooming into just Choa Chu Kang, the adaptive method picks up on local hotspots that the fixed one glosses over — useful if you actually care about pinpointing exact clusters rather than just the general shape.
+
 ```{r}
 clarkevans.test(childcare_pg_ppp,
                 correction="none",
@@ -399,3 +411,6 @@ clarkevans.test(childcare_jw_ppp,
                 alternative=c("two.sided"),
                 nsim=999)
 ```
+Now with all four planning areas tested, Choa Chu Kang and Tampines both show clustering, and it's worth checking whether Punggol and Jurong West follow the same pattern or not - planned towns like Punggol might actually be more evenly distributed since childcare centres get planned in from the start.
+
+Went through G, F, K and L functions for Choa Chu Kang and Tampines — all four are basically different lenses on the same question (are these points clustered or not), and they consistently point the same direction. Good sanity check that the earlier Clark-Evans results weren't a fluke.
