@@ -8,7 +8,9 @@ website:
       - text: Hands-on Exercise
         menu:
         - text: Exercise 1
-          href: Hands_ on_Ex/ Hands-on-Ex1.html
+          href: Hands_on_Ex/Hands_onEx01/hands_on_ex01.html
+        - text: Exercise 2
+          href: Hands_on_Ex/Hands_onEx02/hands_on_ex02.html
     right:
       - href: index.qmd
         text: Home
@@ -24,4 +26,3 @@ format:
     
 
 editor: visual
-

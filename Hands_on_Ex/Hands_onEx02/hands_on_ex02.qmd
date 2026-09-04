@@ -225,13 +225,6 @@ plot(st_geometry(ck), main = "Choa Chu Kang")
 plot(st_geometry(jw), main = "Jurong West")
 ```
 
-```{r}
-clarkevans.test(childcare_ck_ppp,
-                correction="none",
-                clipregion=NULL,
-                alternative=c("two.sided"),
-                nsim=999)
-```
 
 ```{r}
 pg = mpsz_cl %>%
