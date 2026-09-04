@@ -343,3 +343,59 @@ tm_shape(kde_childcareSG_bw_terra) +
   tm_compass() +
   tm_layout(scale = 1.0)
 ```
+
+```{r}
+set.seed(1234)
+```
+
+```{r}
+G_CK = Gest(childcare_ck_ppp, correction = "border")
+plot(G_CK, xlim=c(0,500))
+```
+
+```{r}
+G_CK.csr = envelope(childcare_ck_ppp, Gest, nsim = 999)
+plot(G_CK.csr)
+```
+
+```{r}
+G_tm = Gest(childcare_tm_ppp, correction = "best")
+plot(G_tm)
+```
+
+```{r}
+G_tm.csr = envelope(childcare_tm_ppp, Gest, correction = "all", nsim = 999)
+plot(G_tm.csr)
+```
+```{r}
+childcare_ck_ppp.km = rescale.ppp(childcare_ck_ppp, 1000, "km")
+```
+
+```{r}
+kde_ck_adaptive = adaptive.density(
+  childcare_ck_ppp.km, 
+  method="kernel")
+
+par(mfrow=c(1,2))
+plot(density(childcare_ck_ppp.km, 
+             sigma=bw.diggle, 
+             edge=TRUE, 
+             kernel="gaussian"),
+     main="Fixed (bw.diggle)")
+plot(kde_ck_adaptive, main="Adaptive")
+```
+```{r}
+clarkevans.test(childcare_pg_ppp,
+                correction="none",
+                clipregion=NULL,
+                alternative=c("two.sided"),
+                nsim=999)
+```
+
+```{r}
+clarkevans.test(childcare_jw_ppp,
+                correction="none",
+                clipregion=NULL,
+                alternative=c("two.sided"),
+                nsim=999)
+```
