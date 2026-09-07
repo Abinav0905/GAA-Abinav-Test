@@ -1,0 +1,208 @@
+---
+title: "Spatio-Temporal Point Patterns Analysis"
+subtitle: "Hands-on Exercise 3"
+date: "today"
+date-modified: last-modified
+format: html
+execute:
+  echo: true
+  eval: true
+  message: false
+  warning: false
+  freeze: true
+editor: visual
+toc: true
+toc-location: right
+---
+
+```{r}
+options(expressions = 500000)
+```
+
+## Installing and Loading the R Packages
+
+```{r}
+pacman::p_load(sf, raster, spatstat, sparr, tmap, tidyverse)
+```
+
+## Importing and Preparing Study Area
+
+```{r}
+list_cols = st_read(dsn = "data/geospatial/BATAS WILAYAH KELURAHAN-DESA 10K",
+                     layer = "Batas_Wilayah_KelurahanDesa_10K_AR")
+```
+
+The writeup assumes the shapefile is already filtered down to just Bangka Belitung, but the version we got covers the whole of Indonesia instead. So we filter it ourselves using the province name field before doing anything else.
+
+```{r}
+kbb_raw <- list_cols %>%
+  filter(WADMPR == "Kepulauan Bangka Belitung")
+```
+
+```{r}
+sf_use_s2(FALSE)
+
+kbb_sf <- kbb_raw %>%
+  st_union() %>%
+  st_zm(drop = TRUE, what = "ZM") %>%
+  st_transform(crs = 32748)
+```
+
+Had to turn off S2 spherical geometry checks here since the union kept running into planar assumption warnings. Once that was off, the union went through cleanly.
+
+```{r}
+kbb_sf
+```
+
+```{r}
+kbb_owin <- as.owin(kbb_sf)
+kbb_owin
+```
+
+```{r}
+class(kbb_owin)
+```
+
+Converting to an owin object here so spatstat can actually use this boundary as the "window" to constrain our point pattern analysis to. This is the same conversion step we did in the last exercise with the childcare data, just now for the fire data.
+
+## Importing and Preparing Forest Fire Data
+
+```{r}
+fire_sf <- read_csv("data/aspatial/DL_FIRE_M-C61_800481/fire_archive_M-C61_800481.csv") %>%
+  st_as_sf(coords = c("longitude", "latitude"),
+                       crs = 4326) %>%
+  st_transform(crs = 32748)
+```
+
+```{r}
+fire_sf
+```
+
+```{r}
+fire_sf <- fire_sf %>% 
+  mutate(DayofYear = yday(acq_date)) %>%
+  mutate(Month_num = month(acq_date)) %>%
+  mutate(Month_fac = month(acq_date, 
+                           label = TRUE, 
+                           abbr = FALSE))
+```
+
+ppp objects only accept numeric or character marks, so we need to convert the date into numeric day-of-year and month fields before this data can be used in spatstat later.
+
+## Visualising the Fire Points
+
+```{r}
+tm_shape(kbb_sf) +
+  tm_polygons() +
+tm_shape(fire_sf) +
+  tm_dots(col = "red", size = 0.05)
+```
+
+Quick visual check to confirm the fire points actually fall inside the province boundary and look reasonably distributed.
+
+```{r}
+tm_shape(kbb_sf) +
+  tm_polygons() +
+tm_shape(fire_sf) +
+  tm_dots(col = "Month_fac", size = 0.05) +
+  tm_facets(by = "Month_fac", free.coords = FALSE, drop.units = TRUE)
+```
+
+Breaking it down by month makes the seasonal pattern pretty obvious. Should expect way more fires during the dry season months compared to the wetter ones.
+
+```{r}
+fire_month <- fire_sf %>% 
+  select(Month_num)
+```
+
+```{r}
+fire_month_ppp <- as.ppp(fire_month)
+fire_month_ppp
+```
+
+```{r}
+summary(fire_month_ppp)
+```
+
+```{r}
+any(duplicated(fire_month_ppp))
+```
+
+Checking for duplicates matters here because duplicate points can mess with density estimation later. Good sign if this comes back FALSE.
+
+```{r}
+fire_month_owin <- fire_month_ppp[kbb_owin]
+summary(fire_month_owin)
+```
+
+```{r}
+plot(fire_month_owin)
+```
+
+Same as before, clipping the points down to just what falls inside the actual province boundary rather than the full rectangular extent.
+
+## Computing STKDE by Month
+
+```{r}
+set.seed(1234)
+st_kde <- spattemp.density(fire_month_owin)
+summary(st_kde)
+```
+
+This is the actual spatio-temporal KDE, it computes density across both space and time simultaneously rather than treating them separately.
+
+```{r}
+tims <- c(7,8,9,10,11,12)
+par(mfcol=c(2,3))
+for(i in tims){ 
+  plot(st_kde, i, 
+       override.par=FALSE, 
+       fix.range=TRUE, 
+       main=paste("KDE at month",i))
+}
+```
+
+Plotting July through December side by side lets us actually see how the fire hotspots shift and intensify across the second half of the year.
+
+## Computing STKDE by Day of Year
+
+```{r}
+fire_yday_ppp <- fire_sf %>% 
+  select(DayofYear) %>%
+  as.ppp()
+```
+
+```{r}
+fire_yday_owin <- fire_yday_ppp[kbb_owin]
+summary(fire_yday_owin)
+```
+
+Doing the same STKDE process but now using day of year instead of month gives us much finer temporal resolution. We can see clustering down to specific days rather than just broad monthly buckets.
+
+```{r}
+set.seed(1234)
+kde_yday <- spattemp.density(fire_yday_owin)
+summary(kde_yday)
+```
+
+## Computing STKDE by Day of Year: Improved Method
+
+```{r}
+set.seed(1234)
+BOOT.spattemp(fire_yday_owin) 
+```
+
+Instead of eyeballing a bandwidth, BOOT.spattemp() actually calculates the optimal spatial and temporal bandwidth using bootstrap estimation. Worth using since manually guessing bandwidths is pretty unreliable.
+
+```{r}
+kde_yday <- spattemp.density(fire_yday_owin,
+                             h = 9000,
+                             lambda = 19)
+summary(kde_yday)
+```
+
+```{r}
+plot(kde_yday)
+```
+
+Recomputing the KDE with the bootstrap optimized bandwidth values gives a noticeably cleaner, more defensible density surface than just guessing.
