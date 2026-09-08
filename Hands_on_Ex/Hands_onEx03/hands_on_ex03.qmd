@@ -206,3 +206,103 @@ plot(kde_yday)
 ```
 
 Recomputing the KDE with the bootstrap optimized bandwidth values gives a noticeably cleaner, more defensible density surface than just guessing.
+
+## Computing STKDE by Day of Year: Improved Method
+
+```{r}
+set.seed(1234)
+BOOT.spattemp(fire_yday_owin) 
+```
+
+Instead of eyeballing a bandwidth, BOOT.spattemp() actually calculates the optimal spatial and temporal bandwidth using bootstrap estimation. Worth using since manually guessing bandwidths is pretty unreliable.
+
+```{r}
+kde_yday <- spattemp.density(fire_yday_owin,
+                             h = 9000,
+                             lambda = 19)
+summary(kde_yday)
+```
+
+```{r}
+plot(kde_yday)
+```
+
+Recomputing the KDE with the bootstrap optimized bandwidth values gives a noticeably cleaner, more defensible density surface than just guessing.
+
+```{r}
+set.seed(1234)
+kde_yday_manual <- spattemp.density(fire_yday_owin,
+                             h = 15000,
+                             lambda = 5)
+summary(kde_yday_manual)
+```
+
+Just to see how much it actually matters, tried a manually picked bandwidth here instead of the bootstrap optimized one. The spatial bandwidth (h) controls how smooth the space dimension looks, and lambda controls smoothness over time, picking these badly can make the density surface either way too blocky or way too smoothed out to be useful.
+
+## Spatio-temporal Point Patterns Analysis: stpp Methods
+
+```{r}
+pacman::p_load(stpp)
+```
+
+Switching over to the stpp package here, which gives us a different set of tools for space-time analysis, specifically the space-time K-function, which extends what we did with the regular K-function in the last exercise into the time dimension too.
+
+```{r}
+coords <- st_coordinates(fire_sf)
+
+fire_df <- data.frame(
+  x = coords[, 1],  
+  y = coords[, 2],
+  t = fire_sf$DayofYear)
+
+fire_stpp <- as.3dpoints(fire_df)
+class(fire_stpp)
+```
+
+```{r}
+plot(fire_stpp)
+```
+
+This just visualizes the raw fire points in 3D, x, y, and time together, before we run any actual statistics on them.
+
+```{r}
+set.seed(1234)
+kbb_stik <- STIKhat(fire_stpp)
+```
+
+```{r}
+plotK(kbb_stik)
+```
+
+The space-time K-function tells us whether fires cluster together in both space and time simultaneously, not just one or the other. If the contour plot shows high values at small spatial and temporal distances, that means fires that happen close together in space also tend to happen close together in time, which would make sense for something like slash-and-burn agriculture practices that spread across neighboring areas within short windows.
+
+```{r}
+set.seed(1234)
+kde_month_adaptive <- spattemp.density(fire_month_owin)
+summary(kde_month_adaptive)
+```
+
+Curious whether the adaptive approach changes anything meaningful at the monthly resolution too, not just day of year, since the earlier adaptive vs fixed comparison in the last exercise made a visible difference.
+
+```{r}
+set.seed(1234)
+fire_ppp_spatial_only <- fire_sf %>%
+  as.ppp()
+
+fire_ppp_spatial_only_owin <- fire_ppp_spatial_only[kbb_owin]
+
+G_fire <- Gest(fire_ppp_spatial_only_owin, correction = "border")
+plot(G_fire)
+```
+
+Ran a plain spatial G-function here (ignoring time completely) just to compare against the space-time K-function result above. If this alone shows clustering but doesn't tell us anything about timing, it makes the case for why the spatio-temporal approach actually adds value instead of just being spatial analysis with extra steps.
+
+```{r}
+fire_sf <- fire_sf %>%
+  mutate(weekday = wday(acq_date, label = TRUE),
+         is_weekend = wday(acq_date) %in% c(1,7))
+
+table(fire_sf$is_weekend)
+```
+
+Just curious whether fire occurrence has any weekday pattern, humans starting fires (intentionally or by accident) might show a weekly rhythm, whereas naturally occurring fires probably wouldn't care what day it is. Not expecting a huge effect here, but worth checking.
