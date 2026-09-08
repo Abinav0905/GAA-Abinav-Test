@@ -141,6 +141,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="dropdown-item" href="../../Hands_on_Ex/Hands_onEx02/hands_on_ex02.html">
  <span class="dropdown-text">Exercise 2</span></a>
   </li>  
+        <li>
+    <a class="dropdown-item" href="../../Hands_on_Ex/Hands_onEx03/hands_on_ex03.html">
+ <span class="dropdown-text">Exercise 3</span></a>
+  </li>  
     </ul>
   </li>
 </ul>
@@ -176,6 +180,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#computing-stkde-by-month" id="toc-computing-stkde-by-month" class="nav-link" data-scroll-target="#computing-stkde-by-month">Computing STKDE by Month</a></li>
   <li><a href="#computing-stkde-by-day-of-year" id="toc-computing-stkde-by-day-of-year" class="nav-link" data-scroll-target="#computing-stkde-by-day-of-year">Computing STKDE by Day of Year</a></li>
   <li><a href="#computing-stkde-by-day-of-year-improved-method" id="toc-computing-stkde-by-day-of-year-improved-method" class="nav-link" data-scroll-target="#computing-stkde-by-day-of-year-improved-method">Computing STKDE by Day of Year: Improved Method</a></li>
+  <li><a href="#computing-stkde-by-day-of-year-improved-method-1" id="toc-computing-stkde-by-day-of-year-improved-method-1" class="nav-link" data-scroll-target="#computing-stkde-by-day-of-year-improved-method-1">Computing STKDE by Day of Year: Improved Method</a></li>
+  <li><a href="#spatio-temporal-point-patterns-analysis-stpp-methods" id="toc-spatio-temporal-point-patterns-analysis-stpp-methods" class="nav-link" data-scroll-target="#spatio-temporal-point-patterns-analysis-stpp-methods">Spatio-temporal Point Patterns Analysis: stpp Methods</a></li>
   </ul>
 </nav>
     </div>
@@ -4091,6 +4097,2620 @@ Evaluation
 </div>
 </div>
 <p>Recomputing the KDE with the bootstrap optimized bandwidth values gives a noticeably cleaner, more defensible density surface than just guessing.</p>
+</section>
+<section id="computing-stkde-by-day-of-year-improved-method-1" class="level2">
+<h2 class="anchored" data-anchor-id="computing-stkde-by-day-of-year-improved-method-1">Computing STKDE by Day of Year: Improved Method</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="fu">BOOT.spattemp</span>(fire_yday_owin) </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Initialising...Done.
+Optimising...
+h = 15481.74 ; lambda = 16.27156 
+h = 17029.91 ; lambda = 16.27156 
+h = 15481.74 ; lambda = 1564.445 
+h = 15868.78 ; lambda = 790.3585 
+h = 16062.3 ; lambda = 403.315 
+h = 16159.06 ; lambda = 209.7933 
+h = 16207.44 ; lambda = 113.0324 
+h = 16231.63 ; lambda = 64.65199 
+h = 16243.73 ; lambda = 40.46177 
+h = 16249.78 ; lambda = 28.36666 
+h = 16261.87 ; lambda = 4.176448 
+h = 16252.8 ; lambda = 22.31911 
+h = 16258.85 ; lambda = 10.224 
+h = 16254.31 ; lambda = 19.29533 
+h = 14706.14 ; lambda = 19.29533 
+h = 13544.25 ; lambda = 20.80722 
+h = 12771.68 ; lambda = 17.78344 
+h = 11030.36 ; lambda = 17.0275 
+h = 9092.875 ; lambda = 21.56317 
+h = 5898.444 ; lambda = 24.20897 
+h = 3384.551 ; lambda = 20.42925 
+h = 11004.33 ; lambda = 20.71273 
+h = 5924.477 ; lambda = 20.52374 
+h = 3384.551 ; lambda = 20.42925 
+h = 792.5603 ; lambda = 27.70521 
+h = 8470.91 ; lambda = 19.69693 
+h = 3352.01 ; lambda = 25.03578 
+h = 7191.185 ; lambda = 21.03164 
+h = 7217.218 ; lambda = 17.34641 
+h = 6228.137 ; lambda = 22.49333 
+h = 7494.846 ; lambda = 23.00123 
+h = 6317.069 ; lambda = 21.14311 
+h = 5354.021 ; lambda = 22.6048 
+h = 6731.894 ; lambda = 21.42493 
+h = 6820.826 ; lambda = 20.07472 
+h = 6672.654 ; lambda = 20.67937 
+h = 7087.479 ; lambda = 20.96119 
+h = 6509.672 ; lambda = 21.09763 
+Done.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>         h     lambda 
+6672.65376   20.67937 </code></pre>
+</div>
+</div>
+<p>Instead of eyeballing a bandwidth, BOOT.spattemp() actually calculates the optimal spatial and temporal bandwidth using bootstrap estimation. Worth using since manually guessing bandwidths is pretty unreliable.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>kde_yday <span class="ot">&lt;-</span> <span class="fu">spattemp.density</span>(fire_yday_owin,</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>                             <span class="at">h =</span> <span class="dv">9000</span>,</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>                             <span class="at">lambda =</span> <span class="dv">19</span>)</span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(kde_yday)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Spatiotemporal Kernel Density Estimate
+
+Bandwidths
+  h = 9000 (spatial)
+  lambda = 19 (temporal)
+
+No. of observations
+  769 
+
+Spatial bound
+  Type: polygonal
+  2D enclosure: [512066.8, 930756.9] x [9579205, 9834915]
+
+Temporal bound
+  [10, 352]
+
+Evaluation
+  128 x 128 x 343 trivariate lattice
+  Density range: [1.713198e-101, 2.36825e-12]</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(kde_yday)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-3.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-4.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-5.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-6.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-7.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-8.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-9.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-10.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-11.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-12.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-13.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-14.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-15.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-16.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-17.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-18.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-19.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-20.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-21.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-22.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-23.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-24.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-25.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-26.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-27.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-28.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-29.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-30.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-31.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-32.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-33.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-34.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-35.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-36.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-37.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-38.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-39.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-40.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-41.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-42.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-43.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-44.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-45.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-46.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-47.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-48.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-49.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-50.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-51.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-52.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-53.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-54.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-55.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-56.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-57.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-58.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-59.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-60.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-61.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-62.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-63.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-64.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-65.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-66.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-67.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-68.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-69.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-70.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-71.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-72.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-73.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-74.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-75.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-76.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-77.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-78.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-79.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-80.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-81.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-82.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-83.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-84.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-85.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-86.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-87.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-88.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-89.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-90.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-91.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-92.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-93.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-94.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-95.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-96.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-97.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-98.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-99.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-100.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-101.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-102.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-103.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-104.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-105.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-106.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-107.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-108.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-109.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-110.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-111.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-112.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-113.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-114.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-115.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-116.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-117.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-118.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-119.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-120.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-121.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-122.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-123.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-124.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-125.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-126.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-127.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-128.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-129.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-130.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-131.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-132.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-133.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-134.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-135.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-136.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-137.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-138.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-139.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-140.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-141.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-142.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-143.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-144.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-145.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-146.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-147.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-148.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-149.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-150.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-151.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-152.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-153.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-154.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-155.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-156.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-157.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-158.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-159.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-160.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-161.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-162.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-163.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-164.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-165.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-166.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-167.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-168.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-169.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-170.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-171.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-172.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-173.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-174.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-175.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-176.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-177.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-178.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-179.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-180.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-181.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-182.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-183.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-184.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-185.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-186.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-187.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-188.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-189.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-190.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-191.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-192.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-193.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-194.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-195.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-196.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-197.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-198.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-199.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-200.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-201.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-202.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-203.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-204.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-205.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-206.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-207.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-208.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-209.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-210.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-211.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-212.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-213.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-214.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-215.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-216.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-217.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-218.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-219.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-220.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-221.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-222.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-223.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-224.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-225.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-226.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-227.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-228.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-229.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-230.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-231.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-232.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-233.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-234.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-235.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-236.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-237.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-238.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-239.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-240.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-241.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-242.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-243.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-244.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-245.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-246.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-247.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-248.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-249.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-250.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-251.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-252.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-253.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-254.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-255.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-256.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-257.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-258.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-259.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-260.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-261.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-262.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-263.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-264.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-265.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-266.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-267.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-268.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-269.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-270.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-271.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-272.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-273.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-274.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-275.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-276.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-277.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-278.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-279.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-280.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-281.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-282.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-283.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-284.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-285.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-286.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-287.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-288.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-289.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-290.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-291.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-292.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-293.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-294.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-295.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-296.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-297.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-298.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-299.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-300.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-301.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-302.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-303.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-304.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-305.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-306.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-307.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-308.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-309.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-310.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-311.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-312.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-313.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-314.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-315.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-316.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-317.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-318.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-319.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-320.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-321.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-322.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-323.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-324.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-325.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-326.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-327.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-328.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-329.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-330.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-331.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-332.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-333.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-334.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-335.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-336.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-337.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-338.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-339.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-340.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-341.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-342.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-30-343.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Recomputing the KDE with the bootstrap optimized bandwidth values gives a noticeably cleaner, more defensible density surface than just guessing.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>kde_yday_manual <span class="ot">&lt;-</span> <span class="fu">spattemp.density</span>(fire_yday_owin,</span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>                             <span class="at">h =</span> <span class="dv">15000</span>,</span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>                             <span class="at">lambda =</span> <span class="dv">5</span>)</span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(kde_yday_manual)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Spatiotemporal Kernel Density Estimate
+
+Bandwidths
+  h = 15000 (spatial)
+  lambda = 5 (temporal)
+
+No. of observations
+  769 
+
+Spatial bound
+  Type: polygonal
+  2D enclosure: [512066.8, 930756.9] x [9579205, 9834915]
+
+Temporal bound
+  [10, 352]
+
+Evaluation
+  128 x 128 x 343 trivariate lattice
+  Density range: [6.956058e-62, 2.857196e-12]</code></pre>
+</div>
+</div>
+<p>Just to see how much it actually matters, tried a manually picked bandwidth here instead of the bootstrap optimized one. The spatial bandwidth (h) controls how smooth the space dimension looks, and lambda controls smoothness over time, picking these badly can make the density surface either way too blocky or way too smoothed out to be useful.</p>
+</section>
+<section id="spatio-temporal-point-patterns-analysis-stpp-methods" class="level2">
+<h2 class="anchored" data-anchor-id="spatio-temporal-point-patterns-analysis-stpp-methods">Spatio-temporal Point Patterns Analysis: stpp Methods</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(stpp)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Switching over to the stpp package here, which gives us a different set of tools for space-time analysis, specifically the space-time K-function, which extends what we did with the regular K-function in the last exercise into the time dimension too.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(fire_sf)</span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a>fire_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> coords[, <span class="dv">1</span>],  </span>
+<span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> coords[, <span class="dv">2</span>],</span>
+<span id="cb52-6"><a href="#cb52-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">t =</span> fire_sf<span class="sc">$</span>DayofYear)</span>
+<span id="cb52-7"><a href="#cb52-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb52-8"><a href="#cb52-8" aria-hidden="true" tabindex="-1"></a>fire_stpp <span class="ot">&lt;-</span> <span class="fu">as.3dpoints</span>(fire_df)</span>
+<span id="cb52-9"><a href="#cb52-9" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(fire_stpp)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "stpp"</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(fire_stpp)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-34-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This just visualizes the raw fire points in 3D, x, y, and time together, before we run any actual statistics on them.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>kbb_stik <span class="ot">&lt;-</span> <span class="fu">STIKhat</span>(fire_stpp)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotK</span>(kbb_stik)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The space-time K-function tells us whether fires cluster together in both space and time simultaneously, not just one or the other. If the contour plot shows high values at small spatial and temporal distances, that means fires that happen close together in space also tend to happen close together in time, which would make sense for something like slash-and-burn agriculture practices that spread across neighboring areas within short windows.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>kde_month_adaptive <span class="ot">&lt;-</span> <span class="fu">spattemp.density</span>(fire_month_owin)</span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(kde_month_adaptive)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Spatiotemporal Kernel Density Estimate
+
+Bandwidths
+  h = 15481.74 (spatial)
+  lambda = 0.03 (temporal)
+
+No. of observations
+  769 
+
+Spatial bound
+  Type: polygonal
+  2D enclosure: [512066.8, 930756.9] x [9579205, 9834915]
+
+Temporal bound
+  [1, 12]
+
+Evaluation
+  128 x 128 x 12 trivariate lattice
+  Density range: [6.978864e-73, 7.617015e-10]</code></pre>
+</div>
+</div>
+<p>Curious whether the adaptive approach changes anything meaningful at the monthly resolution too, not just day of year, since the earlier adaptive vs fixed comparison in the last exercise made a visible difference.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a>fire_ppp_spatial_only <span class="ot">&lt;-</span> fire_sf <span class="sc">%&gt;%</span></span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.ppp</span>()</span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-5"><a href="#cb59-5" aria-hidden="true" tabindex="-1"></a>fire_ppp_spatial_only_owin <span class="ot">&lt;-</span> fire_ppp_spatial_only[kbb_owin]</span>
+<span id="cb59-6"><a href="#cb59-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-7"><a href="#cb59-7" aria-hidden="true" tabindex="-1"></a>G_fire <span class="ot">&lt;-</span> <span class="fu">Gest</span>(fire_ppp_spatial_only_owin, <span class="at">correction =</span> <span class="st">"border"</span>)</span>
+<span id="cb59-8"><a href="#cb59-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(G_fire)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hands_on_ex03_files/figure-html/unnamed-chunk-38-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Ran a plain spatial G-function here (ignoring time completely) just to compare against the space-time K-function result above. If this alone shows clustering but doesn’t tell us anything about timing, it makes the case for why the spatio-temporal approach actually adds value instead of just being spatial analysis with extra steps.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a>fire_sf <span class="ot">&lt;-</span> fire_sf <span class="sc">%&gt;%</span></span>
+<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">weekday =</span> <span class="fu">wday</span>(acq_date, <span class="at">label =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb60-3"><a href="#cb60-3" aria-hidden="true" tabindex="-1"></a>         <span class="at">is_weekend =</span> <span class="fu">wday</span>(acq_date) <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">7</span>))</span>
+<span id="cb60-4"><a href="#cb60-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb60-5"><a href="#cb60-5" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(fire_sf<span class="sc">$</span>is_weekend)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+FALSE  TRUE 
+ 1266   337 </code></pre>
+</div>
+</div>
+<p>Just curious whether fire occurrence has any weekday pattern, humans starting fires (intentionally or by accident) might show a weekly rhythm, whereas naturally occurring fires probably wouldn’t care what day it is. Not expecting a huge effect here, but worth checking.</p>
 
 
 </section>
