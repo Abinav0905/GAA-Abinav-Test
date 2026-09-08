@@ -1,9 +1,18 @@
 ---
-title: "Hands-on Exercise 1: Geospatial Data Science"
-author: "Abinav"
-date: "28 Aug"
+title: "Geospatial Data Science with sf"
+subtitle: "Hands-on Exercise 1"
+date: "today"
+date-modified: last-modified
+format: html
 execute:
+  echo: true
+  eval: true
+  message: false
   warning: false
+  freeze: true
+editor: visual
+toc: true
+toc-location: right
 ---
 
 ```{r}
