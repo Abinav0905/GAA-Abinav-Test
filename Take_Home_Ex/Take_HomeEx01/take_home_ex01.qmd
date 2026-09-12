@@ -15,26 +15,65 @@ toc: true
 toc-location: right
 ---
 
+```{r}
+#| label: load-packages
+
+pacman::p_load(sf, tidyverse, spatstat, tmap, terra)
+```
+
 ## Introduction and Study Context
 
 ## Research Question and Objectives
 
+**Research Question:** Where are forest-fire events concentrated within Ketapang Regency, and how does their spatial distribution and interaction change across the observed 2026 period (particularly as the dry season progresses)?
+
 ## Data and Study Design
+
+**Study area:** Ketapang Regency, West Kalimantan, Indonesia.
+
+**Core datasets:**
+
+- Forest-fire event data: NASA FIRMS, VIIRS S-NPP (SV-C2) and VIIRS NOAA-20 (J1V-C2), bounding box `109.8, -3.2, 111.3, 0.0`, observation period 1 Jan 2026 – 12 Sept 2026, Shapefile format.
+- Administrative boundary data: indonesia-geospasial.com, "Batas Administrasi Kabupaten/Kota Tahun 2019" (Indonesia regency boundaries), filtered to Ketapang Regency.
 
 ## Data Preparation and Quality Assessment
 
-## Analytical Assumptions and Methodological Decisions
+### Data Import
 
-## First-Order Spatial Point Pattern Analysis
+fire_archive_sv \<- st_read("data/geospatial/DL_FIRE_SV-C2_804529/fire_archive_SV-C2_804529.shp")
 
-## Second-Order Spatial Point Pattern Analysis
+fire_nrt_sv \<- st_read("data/geospatial/DL_FIRE_SV-C2_804529/fire_nrt_SV-C2_804529.shp")
 
-## Integrated Findings and Discussion
+```{r}
+#| label: import-fire-sv
 
-## Geovisualisation and Geocommunication
+fire_archive_sv <- st_read("data/geospatial/DL_FIRE_SV-C2_804529/fire_archive_SV-C2_804529.shp")
+fire_nrt_sv     <- st_read("data/geospatial/DL_FIRE_SV-C2_804529/fire_nrt_SV-C2_804529.shp")
+```
 
-## Public-Safety Planning and Management Implications
+```{r}
+#| label: import-fire-j1v
 
-## Limitations
+fire_archive_j1v <- st_read("data/geospatial/DL_FIRE_J1V-C2_804528/fire_archive_J1V-C2_804528.shp")
+fire_nrt_j1v     <- st_read("data/geospatial/DL_FIRE_J1V-C2_804528/fire_nrt_J1V-C2_804528.shp")
+```
 
-## References
+```{r}
+#| label: import-boundary
+
+boundary_id <- st_read("data/geospatial/BATAS KABUPATEN KOTA DESEMBER 2019 DUKCAPIL/BATAS KABUPATEN KOTA DESEMBER 2019 DUKCAPIL.shp")
+names(boundary_id)
+```
+
+```{r}
+#| label: inspect-fire-columns
+
+names(fire_archive_sv)
+names(fire_nrt_sv)
+```
+
+```{r}
+#| label: check-ketapang-name
+
+boundary_id$KAB_KOTA[grepl("ketapang", boundary_id$KAB_KOTA, ignore.case = TRUE)]
+```
