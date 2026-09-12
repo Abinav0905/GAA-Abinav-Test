@@ -77,3 +77,89 @@ names(fire_nrt_sv)
 
 boundary_id$KAB_KOTA[grepl("ketapang", boundary_id$KAB_KOTA, ignore.case = TRUE)]
 ```
+
+```{r}
+#| label: combine-fire-data
+
+# Add source tags before combining, since we're losing archive/nrt 
+# and satellite distinction once merged (relevant for data-quality discussion)
+fire_archive_sv <- fire_archive_sv %>% mutate(source = "archive", satellite = "SV")
+fire_nrt_sv     <- fire_nrt_sv     %>% mutate(source = "nrt", satellite = "SV", TYPE = NA)
+
+fire_archive_j1v <- fire_archive_j1v %>% mutate(source = "archive", satellite = "J1V")
+fire_nrt_j1v     <- fire_nrt_j1v     %>% mutate(source = "nrt", satellite = "J1V", TYPE = NA)
+
+# Combine all four into one fire event dataset
+fire_all <- bind_rows(fire_archive_sv, fire_nrt_sv, fire_archive_j1v, fire_nrt_j1v)
+
+nrow(fire_all)
+names(fire_all)
+summary(fire_all$ACQ_DATE)
+```
+
+```{r}
+#| label: filter-boundary-ketapang
+
+# Filter boundary to Ketapang Regency only
+ketapang_boundary <- boundary_id %>% 
+  filter(KAB_KOTA == "KETAPANG")
+
+# Transform to projected CRS (UTM Zone 49S) - needed for accurate distance-based 
+# analysis later (spatstat requires planar coordinates, not lat/long degrees)
+ketapang_boundary <- st_transform(ketapang_boundary, crs = 32749)
+
+st_geometry_type(ketapang_boundary)
+st_crs(ketapang_boundary)$epsg
+st_area(ketapang_boundary)
+```
+
+```{r}
+#| label: prep-and-filter-fire-points
+
+# Convert ACQ_DATE from character to proper Date type
+fire_all <- fire_all %>% 
+  mutate(ACQ_DATE = as.Date(ACQ_DATE))
+
+# Reproject fire points to match boundary CRS (UTM Zone 49S)
+fire_all <- st_transform(fire_all, crs = 32749)
+
+# Spatially filter to points falling within Ketapang boundary
+fire_ketapang <- st_filter(fire_all, ketapang_boundary)
+
+nrow(fire_ketapang)
+class(fire_all$ACQ_DATE)
+range(fire_ketapang$ACQ_DATE)
+```
+
+```{r}
+#| label: data-quality-checks
+
+# Check for duplicate observations (same lat/long/date/time)
+n_duplicates <- fire_ketapang %>% 
+  st_drop_geometry() %>% 
+  duplicated() %>% 
+  sum()
+
+# Check for missing/invalid geometries
+n_empty_geom <- sum(st_is_empty(fire_ketapang))
+
+# Check CONFIDENCE field - VIIRS uses categorical low/nominal/high
+table(fire_ketapang$CONFIDENCE, useNA = "always")
+
+# Check for any NA coordinates (shouldn't happen post-import, but verify)
+n_na_coords <- sum(is.na(st_coordinates(fire_ketapang)))
+
+n_duplicates
+n_empty_geom
+n_na_coords
+```
+
+```{r}
+#| label: filter-low-confidence
+
+fire_ketapang_clean <- fire_ketapang %>% 
+  filter(CONFIDENCE != "l")
+
+nrow(fire_ketapang_clean)
+table(fire_ketapang_clean$CONFIDENCE, useNA = "always")
+```
