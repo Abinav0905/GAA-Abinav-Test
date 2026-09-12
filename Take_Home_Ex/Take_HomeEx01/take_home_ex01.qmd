@@ -163,3 +163,129 @@ fire_ketapang_clean <- fire_ketapang %>%
 nrow(fire_ketapang_clean)
 table(fire_ketapang_clean$CONFIDENCE, useNA = "always")
 ```
+
+## First-Order Spatial Point Pattern Analysis
+
+### Preparing the Point Pattern Object
+
+```{r}
+#| label: create-ppp-object
+
+# Convert Ketapang boundary to an owin (observation window) for spatstat
+ketapang_owin <- as.owin(ketapang_boundary)
+
+# Extract coordinates from the cleaned fire points
+fire_coords <- st_coordinates(fire_ketapang_clean)
+
+# Create the ppp (planar point pattern) object
+fire_ppp <- ppp(x = fire_coords[,1], 
+                 y = fire_coords[,2], 
+                 window = ketapang_owin)
+
+# Targeted checks instead of full summary()
+n_dupes_ppp <- sum(duplicated(fire_ppp))
+n_points_final <- fire_ppp$n
+n_points_original <- nrow(fire_coords)
+
+cat("Points in ppp object:", n_points_final, "\n")
+cat("Points before conversion:", n_points_original, "\n")
+cat("Points dropped (outside window):", n_points_original - n_points_final, "\n")
+cat("Duplicated coordinate pairs:", n_dupes_ppp, "\n")
+```
+
+### Kernel Density Estimation
+
+```{r}
+#| label: kde-fire-intensity
+
+# Kernel density estimation using diggle bandwidth selection method
+# (data-driven, avoids arbitrarily picking a bandwidth)
+kde_fire <- density(fire_ppp, sigma = bw.diggle, edge = TRUE)
+
+plot(kde_fire, main = "Kernel Density Estimate of Fire Events in Ketapang")
+plot(ketapang_boundary$geometry, add = TRUE, border = "white")
+```
+
+```{r}
+#| label: check-bandwidth
+
+bw.diggle(fire_ppp)
+```
+
+```{r}
+#| label: compare-bandwidths
+
+bw_diggle <- bw.diggle(fire_ppp)
+bw_ppl    <- bw.ppl(fire_ppp)
+bw_scott  <- bw.scott(fire_ppp)
+
+cat("Diggle:", bw_diggle, "\n")
+cat("PPL:", bw_ppl, "\n")
+cat("Scott (x):", bw_scott[1], "\n")
+cat("Scott (y):", bw_scott[2], "\n")
+```
+
+```{r}
+#| label: kde-final-and-robustness
+
+# Primary KDE using Diggle's bandwidth (data-driven, suited to clustered patterns)
+kde_diggle <- density(fire_ppp, sigma = bw_diggle, edge = TRUE)
+
+# Robustness check: KDE using Scott's rule (much larger bandwidth)
+kde_scott <- density(fire_ppp, sigma = bw_scott, edge = TRUE)
+
+par(mfrow = c(1,2))
+plot(kde_diggle, main = "KDE (Diggle bandwidth)")
+plot(ketapang_boundary$geometry, add = TRUE, border = "white")
+plot(kde_scott, main = "KDE (Scott bandwidth)")
+plot(ketapang_boundary$geometry, add = TRUE, border = "white")
+par(mfrow = c(1,1))
+```
+
+### Temporal Variation in Fire Intensity (Phase-Based)
+
+```{r}
+#| label: phase-kde-prep
+
+# Define fire phase based on documented 2026 Kalimantan wildfire escalation timeline
+fire_ketapang_clean <- fire_ketapang_clean %>% 
+  mutate(phase = case_when(
+    ACQ_DATE < as.Date("2026-07-01") ~ "Pre-escalation (Jan-Jun)",
+    ACQ_DATE < as.Date("2026-08-01") ~ "Onset (Jul)",
+    TRUE ~ "Crisis (Aug-Sep)"
+  ),
+  phase = factor(phase, levels = c("Pre-escalation (Jan-Jun)", "Onset (Jul)", "Crisis (Aug-Sep)")))
+
+table(fire_ketapang_clean$phase)
+```
+
+```{r}
+#| label: phase-kde
+
+# Split ppp object by phase (factor levels set in phase-kde-prep control order)
+fire_ppp_phase <- fire_ppp
+marks(fire_ppp_phase) <- fire_ketapang_clean$phase
+
+fire_split_phase <- split(fire_ppp_phase)
+
+# KDE per phase, same bandwidth (bw_diggle) for comparability across panels
+kde_phase <- lapply(fire_split_phase, function(p) density(p, sigma = bw_diggle, edge = TRUE))
+
+par(mfrow = c(1,3), mar = c(1,1,2,1))
+for (ph in names(kde_phase)) {
+  plot(kde_phase[[ph]], main = ph)
+  plot(ketapang_boundary$geometry, add = TRUE, border = "white")
+}
+par(mfrow = c(1,1))
+```
+
+```{r}
+#| label: quadrat-test-csr
+
+# Quadrat count test for Complete Spatial Randomness (CSR)
+# Using a 5x5 grid - fine enough to detect structure, coarse enough for stable counts
+qcount <- quadratcount(fire_ppp, nx = 5, ny = 5)
+qtest <- quadrat.test(fire_ppp, nx = 5, ny = 5)
+
+qtest
+```
