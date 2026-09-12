@@ -1,0 +1,45 @@
+---
+title: "Geospatial Analytics for Public Safety"
+subtitle: "Take-home Exercise 1 — Executive Summary"
+author: "Abinav"
+date: "today"
+format: revealjs
+editor: visual
+---
+
+## Research Question
+
+## Study Area and Data
+
+## Analytical Approach
+
+## Key Findings
+
+## Visual Evidence
+
+## Limitations
+
+## Public-Safety Implications
+
+---
+title: "Geospatial Analytics for Public Safety"
+subtitle: "Take-home Exercise 1 — Executive Summary"
+author: "Abinav"
+date: "today"
+format: revealjs
+editor: visual
+---
+
+## Research Question
+
+## Study Area and Data
+
+## Analytical Approach
+
+## Key Findings
+
+## Visual Evidence
+
+## Limitations
+
+## Public-Safety Implications

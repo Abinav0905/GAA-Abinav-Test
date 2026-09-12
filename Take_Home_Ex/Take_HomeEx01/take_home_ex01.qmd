@@ -1,0 +1,40 @@
+---
+title: "Geospatial Analytics for Public Safety"
+subtitle: "Take-home Exercise 1: Forest-Fire Events in Ketapang Regency, West Kalimantan"
+date: "today"
+date-modified: last-modified
+format: html
+execute:
+  echo: true
+  eval: true
+  message: false
+  warning: false
+  freeze: true
+editor: visual
+toc: true
+toc-location: right
+---
+
+## Introduction and Study Context
+
+## Research Question and Objectives
+
+## Data and Study Design
+
+## Data Preparation and Quality Assessment
+
+## Analytical Assumptions and Methodological Decisions
+
+## First-Order Spatial Point Pattern Analysis
+
+## Second-Order Spatial Point Pattern Analysis
+
+## Integrated Findings and Discussion
+
+## Geovisualisation and Geocommunication
+
+## Public-Safety Planning and Management Implications
+
+## Limitations
+
+## References
