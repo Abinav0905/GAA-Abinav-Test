@@ -1,5 +1,7 @@
 project:
   type: website
+  render:
+    - "!Take_Home_Ex/Take_HomeEx01/take_home_ex01.qmd"
 
 website:
   title: "GAA-Abinav-Test"
@@ -13,6 +15,8 @@ website:
           href: Hands_on_Ex/Hands_onEx02/hands_on_ex02.html
         - text: Exercise 3
           href: Hands_on_Ex/Hands_onEx03/hands_on_ex03.html
+        - text: Exercise 4
+          href: Hands_on_Ex/Hands_onEx04/hands_on_ex04.html
       - text: Take-home Exercise
         menu:
         - text: "Exercise 1: Executive Summary"
