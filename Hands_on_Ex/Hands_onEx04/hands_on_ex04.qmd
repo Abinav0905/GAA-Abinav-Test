@@ -1,0 +1,414 @@
+---
+title: "Spatial Weights and Applications"
+subtitle: "Hands-on Exercise 4"
+date: "today"
+date-modified: last-modified
+format: html
+execute:
+  echo: true
+  eval: true
+  message: false
+  warning: false
+  freeze: true
+editor: visual
+toc: true
+toc-location: right
+---
+
+## Getting the Data Into R Environment
+
+```{r}
+set.seed(1234)
+pacman::p_load(sf, spdep, tmap, tidyverse, knitr)
+```
+
+## Import Shapefile into R Environment
+
+```{r}
+# Hunan county boundary layer - ESRI shapefile
+hunan <- st_read(dsn = "data/geospatial", 
+                 layer = "Hunan")
+```
+
+## Import CSV File into R Environment
+
+```{r}
+# Hunan 2012 development indicators - csv
+hunan2012 <- read_csv("data/aspatial/Hunan_2012.csv")
+```
+
+## Performing Relational Join
+
+```{r}
+hunan <- hunan %>%
+  left_join(hunan2012) %>%
+  select(1:4, 7, 15)
+```
+
+Joining the shapefile with the csv attribute data here lets us actually visualize the development indicators spatially, otherwise we'd just have geometry with no data to color by.
+
+## Visualising Regional Development Indicator
+
+```{r}
+basemap <- tm_shape(hunan) +
+  tm_polygons() +
+  tm_text("NAME_3", size = 0.5)
+
+gdppc <- qtm(hunan, "GDPPC") +
+  tm_layout(legend.position = c("left", "bottom"))
+
+tmap_arrange(basemap, gdppc, asp = 1, ncol = 2)
+```
+
+Nice to see both the raw county names and the GDP per capita distribution side by side before we start building any spatial weights.
+
+## Computing Contiguity Spatial Weights
+
+### Computing (QUEEN) Contiguity Based Neighbours
+
+```{r}
+wm_q <- poly2nb(hunan, queen = TRUE)
+summary(wm_q)
+```
+
+```{r}
+wm_q[[1]]
+```
+
+```{r}
+hunan$County[1]
+```
+
+```{r}
+hunan$NAME_3[c(2,3,4,57,85)]
+```
+
+```{r}
+nb1 <- wm_q[[1]]
+nb1 <- hunan$GDPPC[nb1]
+nb1
+```
+
+This little walkthrough is a good way to sanity check what the neighbour list actually means in practice. Polygon 1 is Anxiang county, its five queen neighbours are Hanshou, Jinshi, Li, Nan and Taoyuan, and we can pull their GDPPC values directly using the neighbour indices.
+
+### Creating (ROOK) Contiguity Based Neighbours
+
+```{r}
+wm_r <- poly2nb(hunan, queen = FALSE)
+summary(wm_r)
+```
+
+Rook only counts shared edges as neighbours (not just touching corners like Queen does), so it typically ends up with slightly fewer links overall.
+
+### Visualising Contiguity Weights
+
+```{r}
+longitude <- map_dbl(hunan$geometry, ~st_centroid(.x)[[1]])
+latitude <- map_dbl(hunan$geometry, ~st_centroid(.x)[[2]])
+coords <- cbind(longitude, latitude)
+head(coords)
+```
+
+```{r}
+plot(hunan$geometry, border = "lightgrey")
+plot(wm_q, coords, pch = 19, cex = 0.6, add = TRUE, col = "red")
+```
+
+```{r}
+plot(hunan$geometry, border = "lightgrey")
+plot(wm_r, coords, pch = 19, cex = 0.6, add = TRUE, col = "red")
+```
+
+```{r}
+par(mfrow = c(1,2))
+plot(hunan$geometry, border = "lightgrey", main = "Queen Contiguity")
+plot(wm_q, coords, pch = 19, cex = 0.6, add = TRUE, col = "red")
+plot(hunan$geometry, border = "lightgrey", main = "Rook Contiguity")
+plot(wm_r, coords, pch = 19, cex = 0.6, add = TRUE, col = "red")
+```
+
+## Computing Distance Based Neighbours
+
+### Determine the Cut-off Distance
+
+```{r}
+k1 <- knn2nb(knearneigh(coords))
+k1dists <- unlist(nbdists(k1, coords, longlat = TRUE))
+summary(k1dists)
+```
+
+The max here tells us the largest gap to a nearest neighbour anywhere in the dataset, so using that as our cutoff distance guarantees every county ends up with at least one neighbour.
+
+### Computing Fixed Distance Weight Matrix
+
+```{r}
+wm_d62 <- dnearneigh(coords, 0, 62, longlat = TRUE)
+wm_d62
+```
+
+```{r}
+table(hunan$County, card(wm_d62))
+```
+
+```{r}
+n_comp <- n.comp.nb(wm_d62)
+n_comp$nc
+table(n_comp$comp.id)
+```
+
+```{r}
+plot(hunan$geometry, border = "lightgrey")
+plot(wm_d62, coords, add = TRUE)
+plot(k1, coords, add = TRUE, col = "red", length = 0.08)
+```
+
+```{r}
+par(mfrow = c(1,2))
+plot(hunan$geometry, border = "lightgrey", main = "1st nearest neighbours")
+plot(k1, coords, add = TRUE, col = "red", length = 0.08)
+plot(hunan$geometry, border = "lightgrey", main = "Distance link")
+plot(wm_d62, coords, add = TRUE, pch = 19, cex = 0.6)
+```
+
+### Computing Adaptive Distance Weight Matrix
+
+```{r}
+knn6 <- knn2nb(knearneigh(coords, k = 6))
+knn6
+```
+
+```{r}
+plot(hunan$geometry, border = "lightgrey")
+plot(knn6, coords, pch = 19, cex = 0.6, add = TRUE, col = "red")
+```
+
+Fixing k = 6 means every single county gets exactly six neighbours regardless of how rural or dense that area is, which fixes the imbalance problem you'd get from a straight distance cutoff.
+
+```{r}
+set.seed(1234)
+knn3 <- knn2nb(knearneigh(coords, k = 3))
+par(mfrow = c(1,2))
+plot(hunan$geometry, border = "lightgrey", main = "k = 3")
+plot(knn3, coords, pch = 19, cex = 0.6, add = TRUE, col = "red")
+plot(hunan$geometry, border = "lightgrey", main = "k = 6")
+plot(knn6, coords, pch = 19, cex = 0.6, add = TRUE, col = "red")
+```
+
+Worth seeing how sensitive this is to the k choice. k=3 gives a much sparser, tighter network compared to k=6, fewer neighbours means each county's spatial lag calculation later will be based on a smaller, more localized sample.
+
+## Weights Based on IDW
+
+```{r}
+dist <- nbdists(wm_q, coords, longlat = TRUE)
+ids <- lapply(dist, function(x) 1/(x))
+ids
+```
+
+Inverse distance weighting just means closer neighbours get more influence and farther ones get less, instead of every neighbour counting equally regardless of how far away it actually is.
+
+## Row-standardised Weights Matrix
+
+```{r}
+rswm_q <- nb2listw(wm_q, style = "W", zero.policy = TRUE)
+rswm_q
+```
+
+```{r}
+rswm_q$weights[10]
+```
+
+Row standardising just means each neighbour's weight adds up to 1 total per county, so if a county has 8 neighbours, each one gets 0.125 of the influence rather than full weight.
+
+```{r}
+rswm_ids <- nb2listw(wm_q, glist = ids, style = "B", zero.policy = TRUE)
+rswm_ids
+```
+
+```{r}
+rswm_ids$weights[1]
+```
+
+```{r}
+summary(unlist(rswm_ids$weights))
+```
+
+## Application of Spatial Weight Matrix
+
+### Spatial Lag with Row-standardized Weights
+
+```{r}
+GDPPC.lag <- lag.listw(rswm_q, hunan$GDPPC)
+GDPPC.lag
+```
+
+```{r}
+nb1 <- wm_q[[1]]
+nb1 <- hunan$GDPPC[nb1]
+nb1
+```
+
+This makes it click, the spatial lag for Anxiang county is basically just the average GDPPC of its five neighbours. It's a way of summarizing what's happening around a place, not just at that place itself.
+
+```{r}
+lag.list <- list(hunan$NAME_3, lag.listw(rswm_q, hunan$GDPPC))
+lag.res <- as.data.frame(lag.list)
+colnames(lag.res) <- c("NAME_3", "lag GDPPC")
+hunan <- left_join(hunan, lag.res)
+```
+
+```{r}
+head(hunan)
+```
+
+```{r}
+gdppc <- qtm(hunan, "GDPPC")
+lag_gdppc <- qtm(hunan, "lag GDPPC")
+tmap_arrange(gdppc, lag_gdppc, asp = 1, ncol = 2)
+```
+
+### Spatial Lag as a Sum of Neighboring Values
+
+```{r}
+b_weights <- lapply(wm_q, function(x) 0*x + 1)
+b_weights2 <- nb2listw(wm_q, glist = b_weights, style = "B")
+b_weights2
+```
+
+```{r}
+lag_sum <- list(hunan$NAME_3, lag.listw(b_weights2, hunan$GDPPC))
+lag.res <- as.data.frame(lag_sum)
+colnames(lag.res) <- c("NAME_3", "lag_sum GDPPC")
+lag_sum
+```
+
+Difference from before, this doesn't average the neighbours, it just adds up their raw GDPPC values. So bigger numbers here mostly just reflect having more neighbours, not necessarily a richer neighbourhood.
+
+```{r}
+hunan <- left_join(hunan, lag.res)
+```
+
+```{r}
+gdppc <- qtm(hunan, "GDPPC")
+lag_sum_gdppc <- qtm(hunan, "lag_sum GDPPC")
+tmap_arrange(gdppc, lag_sum_gdppc, asp = 1, ncol = 2)
+```
+
+### Spatial Window Average
+
+```{r}
+wm_qs <- include.self(wm_q)
+wm_qs[[1]]
+```
+
+```{r}
+wm_qs <- nb2listw(wm_qs)
+wm_qs
+```
+
+The key difference here is include.self(), it adds each county as its own neighbour too, so the "average" now includes the county's own GDPPC value along with its neighbours', not just the surrounding ones.
+
+```{r}
+lag_w_avg_gpdpc <- lag.listw(wm_qs, hunan$GDPPC)
+lag_w_avg_gpdpc
+```
+
+```{r}
+lag.list.wm_qs <- list(hunan$NAME_3, lag.listw(wm_qs, hunan$GDPPC))
+lag_wm_qs.res <- as.data.frame(lag.list.wm_qs)
+colnames(lag_wm_qs.res) <- c("NAME_3", "lag_window_avg GDPPC")
+hunan <- left_join(hunan, lag_wm_qs.res)
+```
+
+```{r}
+hunan %>%
+  select("County", "lag GDPPC", "lag_window_avg GDPPC") %>%
+  kable()
+```
+
+```{r}
+w_avg_gdppc <- qtm(hunan, "lag_window_avg GDPPC")
+tmap_arrange(lag_gdppc, w_avg_gdppc, asp = 1, ncol = 2)
+```
+
+### Spatial Window Sum
+
+```{r}
+wm_qs <- include.self(wm_q)
+wm_qs
+```
+
+```{r}
+b_weights <- lapply(wm_qs, function(x) 0*x + 1)
+b_weights[1]
+```
+
+```{r}
+b_weights2 <- nb2listw(wm_qs, glist = b_weights, style = "B")
+b_weights2
+```
+
+Same self-inclusion idea as window average, but this time using raw sums instead of row-standardized averages, so this is basically the sum equivalent of what we just did above.
+
+```{r}
+w_sum_gdppc <- list(hunan$NAME_3, lag.listw(b_weights2, hunan$GDPPC))
+w_sum_gdppc
+```
+
+```{r}
+w_sum_gdppc.res <- as.data.frame(w_sum_gdppc)
+colnames(w_sum_gdppc.res) <- c("NAME_3", "w_sum GDPPC")
+hunan <- left_join(hunan, w_sum_gdppc.res)
+```
+
+```{r}
+hunan %>%
+  select("County", "lag_sum GDPPC", "w_sum GDPPC") %>%
+  kable()
+```
+
+```{r}
+w_sum_gdppc <- qtm(hunan, "w_sum GDPPC")
+tmap_arrange(lag_sum_gdppc, w_sum_gdppc, asp = 1, ncol = 2)
+```
+
+```{r}
+set.seed(1234)
+rswm_r <- nb2listw(wm_r, style = "W", zero.policy = TRUE)
+GDPPC.lag.rook <- lag.listw(rswm_r, hunan$GDPPC)
+
+hunan$GDPPC_lag_rook <- GDPPC.lag.rook
+
+lag_gdppc_rook <- qtm(hunan, "GDPPC_lag_rook")
+tmap_arrange(lag_gdppc, lag_gdppc_rook, asp = 1, ncol = 2)
+```
+
+Curious whether Queen vs Rook contiguity actually changes the final spatial lag values meaningfully, or if it's mostly a technical distinction that doesn't matter much in practice once you're computing an average.
+
+```{r}
+set.seed(1234)
+bw_q <- nb2listw(wm_q, style = "B", zero.policy = TRUE)
+GDPPC.lag.binary <- lag.listw(bw_q, hunan$GDPPC)
+
+hunan$GDPPC_lag_binary <- GDPPC.lag.binary
+
+lag_gdppc_binary <- qtm(hunan, "GDPPC_lag_binary")
+tmap_arrange(lag_gdppc, lag_gdppc_binary, asp = 1, ncol = 2)
+```
+
+Style "B" just sums neighbour values with weight 1 each instead of row-standardizing to fractions, similar to what we did with lag_sum earlier but using the row-standardized listw object's binary variant directly.
+
+```{r}
+set.seed(1234)
+wm_d30 <- dnearneigh(coords, 0, 30, longlat = TRUE)
+wm_d30
+```
+
+```{r}
+par(mfrow = c(1,2))
+plot(hunan$geometry, border = "lightgrey", main = "62km cutoff")
+plot(wm_d62, coords, add = TRUE, pch = 19, cex = 0.6)
+plot(hunan$geometry, border = "lightgrey", main = "30km cutoff")
+plot(wm_d30, coords, add = TRUE, pch = 19, cex = 0.6)
+```
+
+Going tighter to 30km shows a much sparser network, some counties probably end up with zero neighbours at this range, which is a real risk of picking a cutoff that's too small.
