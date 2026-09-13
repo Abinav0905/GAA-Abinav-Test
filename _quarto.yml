@@ -1,6 +1,8 @@
 project:
   type: website
-  
+  render:
+    - "*"
+    - "!Take_Home_Ex/Take_HomeEx01/take_home_ex01.qmd" 
 website:
   title: "GAA-Abinav-Test"
   navbar:
