@@ -1,0 +1,390 @@
+---
+title: "Geospatial Analytics for Public Safety"
+subtitle: "Take-home Exercise 1: Forest-Fire Events in Ketapang Regency, West Kalimantan"
+date: "today"
+date-modified: last-modified
+format: html
+execute:
+  echo: true
+  eval: true
+  message: false
+  warning: false
+  freeze: true
+editor: visual
+toc: true
+toc-location: right
+---
+
+```{r}
+#| label: load-packages
+
+pacman::p_load(sf, tidyverse, spatstat, tmap, terra)
+```
+
+## Introduction and Study Context
+
+## Research Question and Objectives
+
+**Research Question:** Where are forest-fire events concentrated within Ketapang Regency, and how does their spatial distribution and interaction change across the observed 2026 period (particularly as the dry season progresses)?
+
+## Data and Study Design
+
+**Study area:** Ketapang Regency, West Kalimantan, Indonesia.
+
+**Core datasets:**
+
+- Forest-fire event data: NASA FIRMS, VIIRS S-NPP (SV-C2) and VIIRS NOAA-20 (J1V-C2), bounding box `109.8, -3.2, 111.3, 0.0`, observation period 1 Jan 2026 – 12 Sept 2026, Shapefile format.
+- Administrative boundary data: indonesia-geospasial.com, "Batas Administrasi Kabupaten/Kota Tahun 2019" (Indonesia regency boundaries), filtered to Ketapang Regency.
+
+## Data Preparation and Quality Assessment
+
+### Data Import
+
+fire_archive_sv \<- st_read("data/geospatial/DL_FIRE_SV-C2_804529/fire_archive_SV-C2_804529.shp")
+
+fire_nrt_sv \<- st_read("data/geospatial/DL_FIRE_SV-C2_804529/fire_nrt_SV-C2_804529.shp")
+
+```{r}
+#| label: import-fire-sv
+
+fire_archive_sv <- st_read("data/geospatial/DL_FIRE_SV-C2_804529/fire_archive_SV-C2_804529.shp")
+fire_nrt_sv     <- st_read("data/geospatial/DL_FIRE_SV-C2_804529/fire_nrt_SV-C2_804529.shp")
+```
+
+```{r}
+#| label: import-fire-j1v
+
+fire_archive_j1v <- st_read("data/geospatial/DL_FIRE_J1V-C2_804528/fire_archive_J1V-C2_804528.shp")
+fire_nrt_j1v     <- st_read("data/geospatial/DL_FIRE_J1V-C2_804528/fire_nrt_J1V-C2_804528.shp")
+```
+
+```{r}
+#| label: import-boundary
+
+boundary_id <- st_read("data/geospatial/BATAS KABUPATEN KOTA DESEMBER 2019 DUKCAPIL/BATAS KABUPATEN KOTA DESEMBER 2019 DUKCAPIL.shp")
+names(boundary_id)
+```
+
+```{r}
+#| label: inspect-fire-columns
+
+names(fire_archive_sv)
+names(fire_nrt_sv)
+```
+
+```{r}
+#| label: check-ketapang-name
+
+boundary_id$KAB_KOTA[grepl("ketapang", boundary_id$KAB_KOTA, ignore.case = TRUE)]
+```
+
+```{r}
+#| label: combine-fire-data
+
+# Add source tags before combining, since we're losing archive/nrt 
+# and satellite distinction once merged (relevant for data-quality discussion)
+fire_archive_sv <- fire_archive_sv %>% mutate(source = "archive", satellite = "SV")
+fire_nrt_sv     <- fire_nrt_sv     %>% mutate(source = "nrt", satellite = "SV", TYPE = NA)
+
+fire_archive_j1v <- fire_archive_j1v %>% mutate(source = "archive", satellite = "J1V")
+fire_nrt_j1v     <- fire_nrt_j1v     %>% mutate(source = "nrt", satellite = "J1V", TYPE = NA)
+
+# Combine all four into one fire event dataset
+fire_all <- bind_rows(fire_archive_sv, fire_nrt_sv, fire_archive_j1v, fire_nrt_j1v)
+
+nrow(fire_all)
+names(fire_all)
+summary(fire_all$ACQ_DATE)
+```
+
+```{r}
+#| label: filter-boundary-ketapang
+
+# Filter boundary to Ketapang Regency only
+ketapang_boundary <- boundary_id %>% 
+  filter(KAB_KOTA == "KETAPANG")
+
+# Transform to projected CRS (UTM Zone 49S) - needed for accurate distance-based 
+# analysis later (spatstat requires planar coordinates, not lat/long degrees)
+ketapang_boundary <- st_transform(ketapang_boundary, crs = 32749)
+
+st_geometry_type(ketapang_boundary)
+st_crs(ketapang_boundary)$epsg
+st_area(ketapang_boundary)
+```
+
+```{r}
+#| label: prep-and-filter-fire-points
+
+# Convert ACQ_DATE from character to proper Date type
+fire_all <- fire_all %>% 
+  mutate(ACQ_DATE = as.Date(ACQ_DATE))
+
+# Reproject fire points to match boundary CRS (UTM Zone 49S)
+fire_all <- st_transform(fire_all, crs = 32749)
+
+# Spatially filter to points falling within Ketapang boundary
+fire_ketapang <- st_filter(fire_all, ketapang_boundary)
+
+nrow(fire_ketapang)
+class(fire_all$ACQ_DATE)
+range(fire_ketapang$ACQ_DATE)
+```
+
+```{r}
+#| label: data-quality-checks
+
+# Check for duplicate observations (same lat/long/date/time)
+n_duplicates <- fire_ketapang %>% 
+  st_drop_geometry() %>% 
+  duplicated() %>% 
+  sum()
+
+# Check for missing/invalid geometries
+n_empty_geom <- sum(st_is_empty(fire_ketapang))
+
+# Check CONFIDENCE field - VIIRS uses categorical low/nominal/high
+table(fire_ketapang$CONFIDENCE, useNA = "always")
+
+# Check for any NA coordinates (shouldn't happen post-import, but verify)
+n_na_coords <- sum(is.na(st_coordinates(fire_ketapang)))
+
+n_duplicates
+n_empty_geom
+n_na_coords
+```
+
+```{r}
+#| label: filter-low-confidence
+
+fire_ketapang_clean <- fire_ketapang %>% 
+  filter(CONFIDENCE != "l")
+
+nrow(fire_ketapang_clean)
+table(fire_ketapang_clean$CONFIDENCE, useNA = "always")
+```
+
+## First-Order Spatial Point Pattern Analysis
+
+### Preparing the Point Pattern Object
+
+```{r}
+#| label: create-ppp-object
+
+# Convert Ketapang boundary to an owin (observation window) for spatstat
+ketapang_owin <- as.owin(ketapang_boundary)
+
+# Extract coordinates from the cleaned fire points
+fire_coords <- st_coordinates(fire_ketapang_clean)
+
+# Create the ppp (planar point pattern) object
+fire_ppp <- ppp(x = fire_coords[,1], 
+                 y = fire_coords[,2], 
+                 window = ketapang_owin)
+
+# Targeted checks instead of full summary()
+n_dupes_ppp <- sum(duplicated(fire_ppp))
+n_points_final <- fire_ppp$n
+n_points_original <- nrow(fire_coords)
+
+cat("Points in ppp object:", n_points_final, "\n")
+cat("Points before conversion:", n_points_original, "\n")
+cat("Points dropped (outside window):", n_points_original - n_points_final, "\n")
+cat("Duplicated coordinate pairs:", n_dupes_ppp, "\n")
+```
+
+### Kernel Density Estimation
+
+```{r}
+#| label: kde-fire-intensity
+
+# Kernel density estimation using diggle bandwidth selection method
+# (data-driven, avoids arbitrarily picking a bandwidth)
+kde_fire <- density(fire_ppp, sigma = bw.diggle, edge = TRUE)
+
+plot(kde_fire, main = "Kernel Density Estimate of Fire Events in Ketapang")
+plot(ketapang_boundary$geometry, add = TRUE, border = "white")
+```
+
+```{r}
+#| label: check-bandwidth
+
+bw.diggle(fire_ppp)
+```
+
+```{r}
+#| label: compare-bandwidths
+
+bw_diggle <- bw.diggle(fire_ppp)
+bw_ppl    <- bw.ppl(fire_ppp)
+bw_scott  <- bw.scott(fire_ppp)
+
+cat("Diggle:", bw_diggle, "\n")
+cat("PPL:", bw_ppl, "\n")
+cat("Scott (x):", bw_scott[1], "\n")
+cat("Scott (y):", bw_scott[2], "\n")
+```
+
+```{r}
+#| label: kde-final-and-robustness
+
+# Primary KDE using Diggle's bandwidth (data-driven, suited to clustered patterns)
+kde_diggle <- density(fire_ppp, sigma = bw_diggle, edge = TRUE)
+
+# Robustness check: KDE using Scott's rule (much larger bandwidth)
+kde_scott <- density(fire_ppp, sigma = bw_scott, edge = TRUE)
+
+par(mfrow = c(1,2))
+plot(kde_diggle, main = "KDE (Diggle bandwidth)")
+plot(ketapang_boundary$geometry, add = TRUE, border = "white")
+plot(kde_scott, main = "KDE (Scott bandwidth)")
+plot(ketapang_boundary$geometry, add = TRUE, border = "white")
+par(mfrow = c(1,1))
+```
+
+### Temporal Variation in Fire Intensity (Phase-Based)
+
+```{r}
+#| label: phase-kde-prep
+
+# Define fire phase based on documented 2026 Kalimantan wildfire escalation timeline
+fire_ketapang_clean <- fire_ketapang_clean %>% 
+  mutate(phase = case_when(
+    ACQ_DATE < as.Date("2026-07-01") ~ "Pre-escalation (Jan-Jun)",
+    ACQ_DATE < as.Date("2026-08-01") ~ "Onset (Jul)",
+    TRUE ~ "Crisis (Aug-Sep)"
+  ),
+  phase = factor(phase, levels = c("Pre-escalation (Jan-Jun)", "Onset (Jul)", "Crisis (Aug-Sep)")))
+
+table(fire_ketapang_clean$phase)
+```
+
+```{r}
+#| label: phase-kde
+
+# Split ppp object by phase (factor levels set in phase-kde-prep control order)
+fire_ppp_phase <- fire_ppp
+marks(fire_ppp_phase) <- fire_ketapang_clean$phase
+
+fire_split_phase <- split(fire_ppp_phase)
+
+# KDE per phase, same bandwidth (bw_diggle) for comparability across panels
+kde_phase <- lapply(fire_split_phase, function(p) density(p, sigma = bw_diggle, edge = TRUE))
+
+par(mfrow = c(1,3), mar = c(1,1,2,1))
+for (ph in names(kde_phase)) {
+  plot(kde_phase[[ph]], main = ph)
+  plot(ketapang_boundary$geometry, add = TRUE, border = "white")
+}
+par(mfrow = c(1,1))
+```
+
+```{r}
+#| label: quadrat-test-csr
+
+# Quadrat count test for Complete Spatial Randomness (CSR)
+# Using a 5x5 grid - fine enough to detect structure, coarse enough for stable counts
+qcount <- quadratcount(fire_ppp, nx = 5, ny = 5)
+qtest <- quadrat.test(fire_ppp, nx = 5, ny = 5)
+
+qtest
+```
+
+### Nearest-Neighbour Distance Functions (G and F)
+
+```{r}
+#| label: g-function-observed
+
+set.seed(1234)
+
+g_fire <- Gest(fire_ppp)
+plot(g_fire, main = "G-function: Observed Nearest-Neighbour Distances")
+```
+
+```{r}
+#| label: f-function-observed
+
+set.seed(1234)
+
+f_fire <- Fest(fire_ppp)
+plot(f_fire, main = "F-function: Observed Empty Space Distances")
+```
+
+```{r}
+#| label: g-function-envelope
+
+set.seed(1234)
+
+g_envelope <- envelope(fire_ppp, Gest, nsim = 99, rank = 1)
+plot(g_envelope, main = "G-function with CSR Envelope (99 simulations)")
+```
+
+```{r}
+#| label: f-function-envelope
+
+set.seed(1234)
+
+f_envelope <- envelope(fire_ppp, Fest, nsim = 99, rank = 1)
+plot(f_envelope, main = "F-function with CSR Envelope (99 simulations)")
+```
+
+### Second-Order Interaction (K and L Functions)
+
+```{r}
+#| label: k-function-observed
+
+set.seed(1234)
+
+k_fire <- Kest(fire_ppp, rmax = 5000, correction = "border")
+plot(k_fire, main = "K-function: Observed (rmax = 5km)")
+```
+
+```{r}
+#| label: k-function-envelope
+
+set.seed(1234)
+
+k_envelope <- envelope(fire_ppp, Kest, rmax = 5000, correction = "border", nsim = 99, rank = 1)
+plot(k_envelope, main = "K-function with CSR Envelope (99 simulations, rmax = 5km)")
+```
+
+```{r}
+#| label: l-function-envelope
+
+set.seed(1234)
+
+l_envelope <- envelope(fire_ppp, Lest, rmax = 5000, correction = "border", nsim = 99, rank = 1)
+plot(l_envelope, . - r ~ r, main = "L-function with CSR Envelope (centred, rmax = 5km)")
+```
+
+### Value-Added Analysis: Spatio-Temporal Interaction Comparison
+
+```{r}
+#| label: spatiotemporal-k-observed
+
+set.seed(1234)
+
+# Reuse phase split from earlier (fire_split_phase)
+k_by_phase <- lapply(fire_split_phase, function(p) Kest(p, rmax = 5000, correction = "border"))
+
+plot(k_by_phase[[1]], main = "K-function by Phase", col = "blue", lty = 1)
+plot(k_by_phase[[2]], add = TRUE, col = "orange", lty = 1)
+plot(k_by_phase[[3]], add = TRUE, col = "red", lty = 1)
+legend("topleft", legend = names(k_by_phase), col = c("blue","orange","red"), lty = 1)
+```
+
+```{r}
+#| label: spatiotemporal-k-envelopes
+
+set.seed(1234)
+
+k_envelope_by_phase <- lapply(fire_split_phase, function(p) 
+  envelope(p, Kest, rmax = 5000, correction = "border", nsim = 99, rank = 1))
+
+par(mfrow = c(1,3), mar = c(4,4,2,1))
+for (ph in names(k_envelope_by_phase)) {
+  plot(k_envelope_by_phase[[ph]], main = ph)
+}
+par(mfrow = c(1,1))
+```
+
