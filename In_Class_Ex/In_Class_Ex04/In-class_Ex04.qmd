@@ -47,7 +47,7 @@ hunan_sf <- left_join(hunan_sf, hunan2012) %>%
 #| fig-width: 16
 #| fig-height: 6
 #| echo: false
-basemap <- tm_shape(hunan) +
+basemap <- tm_shape(hunan_sf) +
   tm_polygons() +
   tm_text("NAME_3", size = 0.5)
 
