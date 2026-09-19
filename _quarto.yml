@@ -21,6 +21,10 @@ website:
           href: Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html
         - text: "Exercise 1: Technical Report"
           href: Take_Home_Ex/Take_HomeEx01/take_home_ex01.html
+      - text: In-class Exercise
+        menu:
+        - text: Exercise 4
+          href: In_Class_Ex/In_Class_Ex04/In-class_Ex04.html
     right:
       - href: index.qmd
         text: Home
