@@ -1,0 +1,504 @@
+---
+title: "Local Measures of Spatial Autocorrelation"
+subtitle: "Hands-on Exercise 5b"
+date: "today"
+date-modified: last-modified
+format: html
+execute:
+  echo: true
+  eval: true
+  message: false
+  warning: false
+  freeze: true
+editor: visual
+toc: true
+toc-location: right
+---
+
+## Getting the Data Into R Environment
+
+```{r}
+set.seed(1234)
+pacman::p_load(sf, sfdep, tmap, tidyverse)
+```
+
+### Import Shapefile into R Environment
+
+```{r}
+# Hunan county boundary layer - ESRI shapefile
+hunan <- st_read(dsn = "data/geospatial", 
+                 layer = "Hunan") %>% 
+  st_transform(crs = 32650)
+```
+
+Different from the last exercise, this time we're transforming straight to UTM zone 50N right at import, since projected coordinates matter more for the distance-based weight calculations coming up later.
+
+### Import CSV File into R Environment
+
+```{r}
+# Hunan 2012 development indicators - csv
+hunan2012 <- read_csv("data/aspatial/Hunan_2012.csv")
+```
+
+### Performing Relational Join
+
+```{r}
+hunan <- hunan %>%
+  left_join(hunan2012) %>%
+  select(1:4, 7, 15)
+```
+
+### Visualising Regional Development Indicator
+
+```{r}
+equal <- tm_shape(hunan) +
+  tm_fill(fill = "GDPPC",
+          fill.scale = tm_scale_intervals(
+            style = "equal",
+            n = 5,
+            values = "brewer.blues"),
+          fill.legend = tm_legend(
+            title = "GDPPC",
+            position = tm_pos_in("left", "bottom"))) + 
+  tm_borders(fill_alpha = 0.5) +
+  tm_title("Equal interval classification")
+```
+
+```{r}
+quantile_map <- tm_shape(hunan) +
+  tm_fill("GDPPC",
+          fill.scale = tm_scale_intervals(
+            style = "quantile",
+            n = 5,
+            values = "brewer.blues"),
+          fill.legend = tm_legend(
+            title = "GDPPC",
+            position = tm_pos_in("left", "bottom"))) + 
+  tm_borders(fill_alpha = 0.5) +
+  tm_title("Quantile interval classification")
+```
+
+```{r}
+tm_shape(hunan) + tm_polygons("GDPPC")
+```
+
+```{r}
+wm_q <- hunan %>%
+  mutate(nb = st_contiguity(geometry),
+         wt = st_weights(nb, style = "W"),
+         .before = 1) 
+```
+
+```{r}
+summary(wm_q$nb)
+```
+
+The nb and wt columns get written straight into the hunan sf table this time using mutate(), a slightly different workflow from spdep's separate poly2nb() and nb2listw() approach in the last exercise, but doing the same underlying jobs
+
+```{r}
+set.seed(1234)
+
+lisa <- wm_q %>% 
+  mutate(local_moran = local_moran(
+    GDPPC, nb, wt, nsim = 99),
+         .before = 1) %>%
+  unnest(local_moran)
+```
+
+```{r}
+glimpse(lisa)
+```
+
+```{r}
+tm_shape(lisa) +
+  tm_polygons(fill = "ii",
+              fill.scale = tm_scale_intervals(
+                style = "pretty",
+                n = 5,
+                values = "brewer.RdBu"),
+              fill.legend = tm_legend(
+                title = "Local Morans'I",
+                position = tm_pos_out())) + 
+  tm_borders(fill_alpha = 0.5) +
+  tm_title("Loal Morans'I of GDPPC (Queen's method)")
+```
+
+```{r}
+tm_shape(lisa) +
+  tm_polygons(fill = "p_ii", 
+              fill.scale = tm_scale_intervals(
+                breaks = c(-Inf, 0.001, 0.01, 0.05, 0.1, Inf),
+                values = "-brewer.Reds"),
+              fill.legend = tm_legend(
+                title = "p-value",
+      position = tm_pos_out())) + 
+  tm_borders(fill_alpha = 0.5) +
+  tm_title("p-values of Loal Moran's I of GDPPC (Queen's method)")
+```
+
+```{r}
+ii.map <- tm_shape(lisa) +
+  tm_polygons(fill = "ii",
+              fill.scale = tm_scale_intervals(
+                style = "pretty",
+                n = 5,
+                values = "brewer.RdBu"),
+              fill.legend = tm_legend(
+                title = "Local Moran's I",
+                position = tm_pos_in("left", "bottom"))) + 
+  tm_borders(fill_alpha = 0.5) +
+  tm_title("Loal Moran's I of GDPPC (Queen's method)")
+```
+
+```{r}
+p_ii.map <- tm_shape(lisa) +
+  tm_polygons(fill = "p_ii", 
+              fill.scale = tm_scale_intervals(
+                breaks = c(-Inf, 0.001, 0.01, 0.05, 0.1, Inf),
+                values = "-brewer.Reds"),
+              fill.legend = tm_legend(
+                title = "p-value",
+      position = tm_pos_in("left", "bottom")
+    )) + 
+  tm_borders(fill_alpha = 0.5) +
+  tm_title("p-values of Loal Moran's I of GDPPC (Queen's method)")
+```
+
+```{r}
+tmap_arrange(ii.map, p_ii.map, asp = 1, ncol = 2)
+```
+
+Local Moran's I values on their own aren't enough, since some of those positive or negative values could just be noise. That's why we're also mapping the p-values right after, to see which of those patterns are actually statistically meaningful rather than random.
+
+### Preparing and Visualising LISA Map
+
+#### Plotting Moran Scatterplot
+
+```{r}
+lisa <- lisa %>%
+  mutate(lag_GDPPC = st_lag(
+    GDPPC, nb, wt),
+    .before = 1) %>%
+  unnest(lag_GDPPC)
+```
+
+```{r}
+ggplot(data = lisa, 
+       aes(x = GDPPC, 
+           y = lag_GDPPC)) +
+  geom_point() +
+  geom_smooth(method = "lm", 
+              se = FALSE, 
+              color = "red") +
+  labs(x = "GDPPC",
+       y = "Spatial Lag of GDPPC",
+       title = "Moran Scatterplot") +
+  theme_minimal()
+```
+
+```{r}
+ggplot(data = lisa, 
+       aes(x = GDPPC, 
+           y = lag_GDPPC, 
+           color = mean)) +
+  geom_point(size = 2) +
+  geom_smooth(method = "lm", 
+              se = FALSE, 
+              color = "black") +
+  geom_hline(yintercept = mean(lisa$lag_GDPPC), lty = 2) + 
+    geom_vline(xintercept = mean(lisa$GDPPC), lty = 2) +
+  scale_color_manual(
+    values = c("High-High" = "red", 
+               "Low-Low" = "blue",
+               "Low-High" = "lightblue", 
+               "High-Low" = "pink")) +
+  labs(x = "GDPPC",
+       y = "Spatial Lag of GDPPC",
+       title = "Moran Scatterplot with LISA Quadrants") +
+  theme_minimal()
+```
+
+The colored version is way more useful, the top right corner (red) is high-GDPPC counties surrounded by other high-GDPPC counties, bottom left (blue) is the low-low equivalent, and the two lighter shades in the off-diagonal quadrants are the interesting outlier cases, places that don't match their surroundings.
+
+#### Plotting Moran Scatterplot with Standardised Variable
+
+```{r}
+lisa <- lisa %>%
+  mutate(z_GDPPC = scale(GDPPC),
+         z_lag_GDPPC = scale(lag_GDPPC),
+         .before = 1)
+```
+
+```{r}
+ggplot(data = lisa, 
+       aes(x = z_GDPPC, 
+           y = z_lag_GDPPC, 
+           color = mean)) +
+  geom_point(size = 2) +
+  geom_smooth(method = "lm", 
+              se = FALSE, 
+              color = "black") +
+  geom_hline(yintercept = mean(lisa$z_lag_GDPPC), lty = 2) + 
+    geom_vline(xintercept = mean(lisa$z_GDPPC), lty = 2) +
+  scale_color_manual(
+    values = c("High-High" = "red", 
+               "Low-Low" = "blue",
+               "Low-High" = "lightblue", 
+               "High-Low" = "pink")) +
+  labs(x = "Standardised GDPPC",
+       y = "Standardised Spatial Lag of GDPPC",
+       title = "Standardised Moran Scatterplot with LISA Quadrants") +
+  theme_minimal()
+```
+
+#### Preparing LISA Map Classes
+
+```{r}
+signif <- 0.05       
+```
+
+```{r}
+lisa <- lisa %>%
+  mutate(
+    LISA_cluster = ifelse(
+      p_ii < 0.05,
+      as.character(mean), 
+      "Insignificant"),
+    LISA_cluster = factor(
+      LISA_cluster,
+      levels = c("Insignificant", "Low-Low", "Low-High", "High-Low", "High-High")
+    )
+  )
+```
+
+#### Plotting and Visualising LISA Map
+
+```{r}
+lisa_map <- tm_shape(lisa) + 
+  tm_polygons(
+    fill = "LISA_cluster",
+    fill.scale = tm_scale_categorical(
+      values = c(
+        "grey80",
+        "blue",
+        "lightblue",
+        "pink",
+        "red"
+      )
+    ),
+    fill.legend = tm_legend(
+      title = "LISA Cluster",
+      position = tm_pos_in("left", "bottom"))
+  ) +
+  tm_borders() +
+  tm_title("Local Moran's I Clusters (p < 0.05)")
+lisa_map
+```
+
+Standardising just puts GDPPC and its spatial lag on the same scale (mean 0, standard deviation 1), which makes the scatterplot easier to read since both axes are now directly comparable. The final LISA map then only colors in counties where the p-value is actually significant, everything else gets marked Insignificant so we don't overinterpret noise as a real cluster.
+
+## Hot Spots and Cold Spots Analysis (HCSA)
+
+### Deriving Distance Weight Matrix
+
+```{r}
+ct <- critical_threshold(st_geometry(hunan))
+ct
+```
+
+```{r}
+hunan_fdw <- hunan %>% 
+  mutate(nb = include_self(
+    st_dist_band(
+      st_geometry(geometry), 
+                 upper = ct)),
+    wt = st_weights(nb, 
+                      style = "W"),
+    .before = 1) 
+```
+
+```{r}
+hunan_adw <- hunan %>%
+  mutate(nb = include_self(
+    st_knn(
+      st_geometry(geometry),
+      k = 6)),
+    wt = st_weights(
+      nb, style = "W"),
+    .before = 1)
+```
+
+### Computing Local Gi\*
+
+```{r}
+set.seed(1234)
+HCSA_fdw <- hunan_fdw %>%
+  mutate(
+    gistar = local_gstar_perm(
+      GDPPC, nb, wt, nsim = 99),
+    .before = 1) %>%
+  unnest(gistar)
+```
+
+### Preparing and Visualising HCSA Map
+
+#### Mapping Gi\* with Fixed Distance Weights
+
+```{r}
+tm_shape(HCSA_fdw) +
+  tm_polygons(fill = "gi_star",
+              fill.scale = tm_scale_intervals(
+                style = "pretty",
+                n = 6,
+                values = "brewer.rd_bu"),
+              fill.legend = tm_legend(
+                title = "Gi*",
+                position = tm_pos_out())) + 
+  tm_borders(fill_alpha = 0.5) +
+  tm_title("Gi* of GDPPC (Fixed Bandwidth d = 60799.91m)")
+```
+
+#### Mapping Local Gi\* p-values
+
+```{r}
+tm_shape(HCSA_fdw) +
+  tm_polygons(fill = "p_sim", 
+              fill.scale = tm_scale_intervals(
+                breaks = c(-Inf, 0.001, 0.01, 0.05, 0.1, Inf),
+                values = "-brewer.Reds"),
+              fill.legend = tm_legend(
+                title = "simulated p-value",
+      position = tm_pos_out())) + 
+  tm_borders(fill_alpha = 0.5) +
+  tm_title("p-values of local Gi* of GDPPC (Fixed distance)")
+```
+
+#### Mapping Both Gi\* Values and p-values
+
+```{r}
+Gi_star_map <- tm_shape(HCSA_fdw) +
+  tm_polygons(fill = "gi_star",
+              fill.scale = tm_scale_intervals(
+                style = "pretty",
+                n = 5,
+                values = "-brewer.rd_bu"),
+              fill.legend = tm_legend(
+                title = "local Gi*",
+                position = tm_pos_in("left", "bottom"))) + 
+  tm_borders(fill_alpha = 0.5) +
+  tm_title("Local Gi* of GDPPC")
+```
+
+```{r}
+p_values_map <- tm_shape(HCSA_fdw) +
+  tm_polygons(fill = "p_sim", 
+              fill.scale = tm_scale_intervals(
+                breaks = c(0, 0.001, 0.01, 0.05, 0.1, 1),
+                values = "-brewer.reds"),
+              fill.legend = tm_legend(
+                title = "p-value",
+      position = tm_pos_in("left", "bottom")
+    )) + 
+  tm_borders(fill_alpha = 0.5) +
+  tm_title("p-values of local Gi* of GDPPC (fixed distance)")
+```
+
+```{r}
+tmap_arrange(Gi_star_map, p_values_map, asp = 1, ncol = 2)
+```
+
+#### Plotting and Visualising HCSA Map
+
+```{r}
+HCSA_fdw <- HCSA_fdw %>%
+  mutate(HCSA_cluster = case_when(
+    p_sim > 0.05 ~ "Insignificant",
+    p_sim <= 0.05 & cluster == "High" ~ "Hot spot",
+    p_sim <= 0.05 & cluster == "Low"  ~ "Cold spot",
+    TRUE ~ "Other"),
+    HCSA_cluster = factor(
+      HCSA_cluster,
+      levels = c("Insignificant", "Hot spot", "Cold spot")
+    ),
+    .before = 1
+  )
+```
+
+```{r}
+HCSA_map <- tm_shape(HCSA_fdw) + 
+  tm_polygons(
+    fill = "HCSA_cluster",
+    fill.scale = tm_scale_categorical(
+      values = c(
+        "grey80",
+        "red",
+        "blue"
+      )
+    ),
+    fill.legend = tm_legend(
+      title = "HSCA Cluster",
+      position = tm_pos_in("left", "bottom"))
+  ) +
+  tm_borders() +
+  tm_title("HCSA Clusters (p < 0.05)")
+HCSA_map
+```
+
+```{r}
+tmap_arrange(Gi_star_map, HCSA_map, asp = 1, ncol = 2)
+```
+
+The Gi\* statistic works differently from local Moran's I, instead of looking for outliers vs clusters, it's specifically hunting for hot spots (high values surrounded by other high values) and cold spots (low surrounded by low). This is why we needed distance-based neighbours instead of the contiguity-based ones from before, since Gi\* is fundamentally about how much a location's neighbourhood total compares to the overall average.
+
+```{r}
+set.seed(1234)
+lisa_nsim499 <- wm_q %>% 
+  mutate(local_moran = local_moran(
+    GDPPC, nb, wt, nsim = 499),
+         .before = 1) %>%
+  unnest(local_moran)
+
+sum(lisa$p_ii_sim < 0.05)
+sum(lisa_nsim499$p_ii_sim < 0.05)
+```
+
+Curious whether bumping the simulations from 99 to 499 actually changes how many counties come out as statistically significant, since more simulations should give a more stable p-value estimate.
+
+```{r}
+set.seed(1234)
+HCSA_adw <- hunan_adw %>%
+  mutate(
+    gistar = local_gstar_perm(
+      GDPPC, nb, wt, nsim = 99),
+    .before = 1) %>%
+  unnest(gistar)
+
+HCSA_adw <- HCSA_adw %>%
+  mutate(HCSA_cluster_adw = case_when(
+    p_sim > 0.05 ~ "Insignificant",
+    p_sim <= 0.05 & cluster == "High" ~ "Hot spot",
+    p_sim <= 0.05 & cluster == "Low"  ~ "Cold spot",
+    TRUE ~ "Other"),
+    HCSA_cluster_adw = factor(
+      HCSA_cluster_adw,
+      levels = c("Insignificant", "Hot spot", "Cold spot")
+    )
+  )
+
+HCSA_map_adw <- tm_shape(HCSA_adw) + 
+  tm_polygons(
+    fill = "HCSA_cluster_adw",
+    fill.scale = tm_scale_categorical(
+      values = c("grey80", "red", "blue")
+    ),
+    fill.legend = tm_legend(
+      title = "HSCA Cluster (adaptive)",
+      position = tm_pos_in("left", "bottom"))
+  ) +
+  tm_borders() +
+  tm_title("HCSA Clusters, Adaptive Weights (p < 0.05)")
+
+tmap_arrange(HCSA_map, HCSA_map_adw, asp = 1, ncol = 2)
+```
+
+Worth comparing whether the hot spot/cold spot pattern actually changes depending on whether we use fixed distance neighbours or k=6 adaptive neighbours, since urban vs rural counties could get very different neighbourhood sizes under the fixed approach.

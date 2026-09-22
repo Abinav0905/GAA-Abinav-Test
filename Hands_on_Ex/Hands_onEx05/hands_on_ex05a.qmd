@@ -30,6 +30,219 @@ hunan <- st_read(dsn = "data/geospatial",
                  layer = "Hunan")
 ```
 
+### Import CSV File into R Environment
+
 ```{r}
-list.files("data/geospatial")
+# Hunan 2012 development indicators - csv
+hunan2012 <- read_csv("data/aspatial/Hunan_2012.csv")
 ```
+
+### Performing Relational Join
+
+```{r}
+hunan <- hunan %>%
+  left_join(hunan2012) %>%
+  select(1:4, 7, 15)
+```
+
+### Visualising Regional Development Indicator
+
+```{r}
+#| fig-width: 12
+#| fig-height: 6
+
+equal <- tm_shape(hunan) +
+  tm_polygons(fill = "GDPPC",
+              fill.scale = tm_scale_intervals(
+                style = "equal",
+                n = 5,
+                values = "brewer.blues")) +
+  tm_borders(fill_alpha = 0.5) + 
+  tm_layout(legend.position = c("left", "bottom"), 
+            main.title = "Equal interval classification")
+
+quantile <- tm_shape(hunan) +
+  tm_polygons(fill = "GDPPC",
+              fill.scale = tm_scale_intervals(
+                style = "quantile",
+                n = 5)) +
+  tm_borders(fill_alpha = 0.5) + 
+  tm_layout(legend.position = c("left", "bottom"), 
+            main.title = "Quantile classification")
+
+tmap_arrange(equal, quantile, asp = 1, ncol = 2)
+```
+
+Good to compare the two classification methods side by side right away, since the choice of classification scheme can make the same data look quite different visually before we even get into the actual spatial autocorrelation stats.
+
+## Global Measures of Spatial Autocorrelation
+
+### Computing Contiguity Spatial Weights
+
+```{r}
+wm_q <- poly2nb(hunan, queen = TRUE)
+summary(wm_q)
+```
+
+### Row-standardised Weights Matrix
+
+```{r}
+rswm_q <- nb2listw(wm_q, style = "W", zero.policy = TRUE)
+rswm_q
+```
+
+Same weight matrix setup we did in the last exercise, just building the foundation before we actually run Moran's I and Geary's C on top of it.
+
+## Global Measures of Spatial Autocorrelation: Moran's I
+
+### Moran's I Test
+
+```{r}
+moran.test(hunan$GDPPC, 
+           listw = rswm_q, 
+           zero.policy = TRUE, 
+           na.action = na.omit)
+```
+
+Moran's I tells us if similar GDPPC values tend to cluster together geographically. A positive value here means high-GDPPC counties tend to sit near other high-GDPPC counties, and low near low, rather than being scattered randomly.
+
+### Computing Monte Carlo Moran's I
+
+```{r}
+set.seed(1234)
+bperm <- moran.mc(hunan$GDPPC, 
+                listw = rswm_q, 
+                nsim = 999, 
+                zero.policy = TRUE, 
+                na.action = na.omit)
+bperm
+```
+
+This simulates 999 random shuffles of the data to check whether the Moran's I value we got is actually unusual, or if it could've happened by chance anyway
+
+### Visualising Monte Carlo Moran's I
+
+```{r}
+mean(bperm$res[1:999])
+var(bperm$res[1:999])
+summary(bperm$res[1:999])
+```
+
+```{r}
+hist(bperm$res, 
+     freq = TRUE, 
+     breaks = 20, 
+     xlab = "Simulated Moran's I")
+abline(v = 0, col = "red") 
+```
+
+The histogram shows where all 999 simulated (random) Moran's I values landed, and the red line marks zero (what you'd expect under pure randomness). Our actual observed value sits way out on the right tail, far from where the random simulations clustered, which is exactly why the p-value came out so small.
+
+```{r}
+bperm_df <- data.frame(moran_i = bperm$res[1:999])
+
+ggplot(bperm_df, aes(x = moran_i)) +
+  geom_histogram(bins = 20, fill = "steelblue", color = "black") +
+  geom_vline(xintercept = 0, color = "red") +
+  labs(title = "Simulated Moran's I Distribution",
+       x = "Simulated Moran's I",
+       y = "Frequency")
+```
+
+Same plot as before, just done in ggplot2 instead of base R graphics, since the writeup specifically challenges us to try this.
+
+## Global Measures of Spatial Autocorrelation: Geary's C
+
+### Geary's C Test
+
+```{r}
+geary.test(hunan$GDPPC, listw = rswm_q)
+```
+
+Geary's C works a bit opposite to Moran's I, values below 1 indicate clustering (similar values near each other), while values above 1 indicate dispersion. Here we're checking if this confirms what Moran's I already suggested.
+
+### Computing Monte Carlo Geary's C
+
+```{r}
+set.seed(1234)
+bperm <- geary.mc(hunan$GDPPC, 
+               listw = rswm_q, 
+               nsim = 999)
+bperm
+```
+
+### Visualising the Monte Carlo Geary's C
+
+```{r}
+mean(bperm$res[1:999])
+var(bperm$res[1:999])
+summary(bperm$res[1:999])
+```
+
+```{r}
+hist(bperm$res, freq = TRUE, breaks = 20, xlab = "Simulated Geary c")
+abline(v = 1, col = "red") 
+```
+
+Same idea as before, but the red line is at 1 this time since that's the "no autocorrelation" reference point for Geary's C, not 0.
+
+## Spatial Correlogram
+
+### Compute Moran's I Correlogram
+
+```{r}
+MI_corr <- sp.correlogram(wm_q, 
+                          hunan$GDPPC, 
+                          order = 6, 
+                          method = "I", 
+                          style = "W")
+plot(MI_corr)
+```
+
+```{r}
+print(MI_corr)
+```
+
+The correlogram shows how spatial autocorrelation changes as you look further away, lag 1 is immediate neighbours, lag 6 is neighbours six steps removed. Notice how the positive correlation at close range (lag 1-2) flips negative further out (lag 5-6), which basically means nearby counties are similar to each other, but counties far apart tend to be more different than you'd expect by chance.
+
+### Compute Geary's C Correlogram and Plot
+
+```{r}
+GC_corr <- sp.correlogram(wm_q, 
+                          hunan$GDPPC, 
+                          order = 6, 
+                          method = "C", 
+                          style = "W")
+plot(GC_corr)
+```
+
+```{r}
+print(GC_corr)
+```
+
+Same pattern shows up here too, Geary's C confirms what Moran's I told us, clustering nearby, more randomness or dispersion at greater distances.
+
+```{r}
+set.seed(1234)
+wm_r <- poly2nb(hunan, queen = FALSE)
+rswm_r <- nb2listw(wm_r, style = "W", zero.policy = TRUE)
+
+moran.test(hunan$GDPPC, 
+           listw = rswm_r, 
+           zero.policy = TRUE, 
+           na.action = na.omit)
+```
+
+Curious whether switching from Queen to Rook contiguity actually changes the Moran's I result meaningfully, since Rook has slightly fewer neighbour links overall.
+
+```{r}
+set.seed(1234)
+bw_q <- nb2listw(wm_q, style = "B", zero.policy = TRUE)
+
+moran.test(hunan$GDPPC, 
+           listw = bw_q, 
+           zero.policy = TRUE, 
+           na.action = na.omit)
+```
+
+Switching from row-standardized to binary weights changes how much influence each neighbour has, worth checking if the statistical conclusion holds either way.
