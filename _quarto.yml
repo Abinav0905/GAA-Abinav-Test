@@ -15,6 +15,10 @@ website:
           href: Hands_on_Ex/Hands_onEx03/hands_on_ex03.html
         - text: Exercise 4
           href: Hands_on_Ex/Hands_onEx04/hands_on_ex04.html
+        - text: Exercise 5a
+          href: Hands_on_Ex/Hands_onEx05/hands_on_ex05a.html
+        - text: Exercise 5b
+          href: Hands_on_Ex/Hands_onEx05/hands_on_ex05b.html
       - text: Take-home Exercise
         menu:
         - text: "Exercise 1: Executive Summary"
