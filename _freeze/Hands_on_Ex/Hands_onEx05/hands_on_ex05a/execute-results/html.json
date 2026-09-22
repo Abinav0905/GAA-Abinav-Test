@@ -1,0 +1,15 @@
+{
+  "hash": "63740e712d7c8f6b19244547ea8eca5c",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"Global Measures of Spatial Autocorrelation\"\nsubtitle: \"Hands-on Exercise 5a\"\ndate: \"today\"\ndate-modified: last-modified\nformat: html\nexecute:\n  echo: true\n  eval: true\n  message: false\n  warning: false\n  freeze: true\neditor: visual\ntoc: true\ntoc-location: right\n---\n\n## Getting the Data Into R Environment\n\n\n::: {.cell}\n\n```{.r .cell-code}\nset.seed(1234)\npacman::p_load(sf, spdep, tmap, tidyverse)\n```\n:::\n\n\n### Import Shapefile into R Environment\n\n\n::: {.cell}\n\n```{.r .cell-code}\n# Hunan county boundary layer - ESRI shapefile\nhunan <- st_read(dsn = \"data/geospatial\", \n                 layer = \"Hunan\")\n```\n\n::: {.cell-output .cell-output-stdout}\n\n```\nReading layer `Hunan' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\Hands_on_Ex\\Hands_onEx05\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 88 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 108.7831 ymin: 24.6342 xmax: 114.2544 ymax: 30.12812\nGeodetic CRS:  WGS 84\n```\n\n\n:::\n:::\n\n\n\n::: {.cell}\n\n```{.r .cell-code}\nlist.files(\"data/geospatial\")\n```\n\n::: {.cell-output .cell-output-stdout}\n\n```\n[1] \"Hunan.dbf\" \"Hunan.prj\" \"Hunan.qpj\" \"Hunan.shp\" \"Hunan.shx\"\n```\n\n\n:::\n:::\n\n",
+    "supporting": [],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}

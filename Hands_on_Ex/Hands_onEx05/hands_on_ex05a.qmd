@@ -1,0 +1,35 @@
+---
+title: "Global Measures of Spatial Autocorrelation"
+subtitle: "Hands-on Exercise 5a"
+date: "today"
+date-modified: last-modified
+format: html
+execute:
+  echo: true
+  eval: true
+  message: false
+  warning: false
+  freeze: true
+editor: visual
+toc: true
+toc-location: right
+---
+
+## Getting the Data Into R Environment
+
+```{r}
+set.seed(1234)
+pacman::p_load(sf, spdep, tmap, tidyverse)
+```
+
+### Import Shapefile into R Environment
+
+```{r}
+# Hunan county boundary layer - ESRI shapefile
+hunan <- st_read(dsn = "data/geospatial", 
+                 layer = "Hunan")
+```
+
+```{r}
+list.files("data/geospatial")
+```
