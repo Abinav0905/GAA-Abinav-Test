@@ -361,97 +361,69 @@
     "href": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#research-question",
     "title": "Geospatial Analytics for Public Safety",
     "section": "Research Question",
-    "text": "Research Question"
+    "text": "Research Question\nWhere are forest-fire events concentrated within Ketapang Regency, and how does their spatial distribution and interaction change across the observed 2026 period, particularly as the dry season progresses."
   },
   {
     "objectID": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#study-area-and-data",
     "href": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#study-area-and-data",
     "title": "Geospatial Analytics for Public Safety",
     "section": "Study Area and Data",
-    "text": "Study Area and Data"
+    "text": "Study Area and Data\n\nStudy area: Ketapang Regency, West Kalimantan, Indonesia\nFire data: NASA FIRMS, VIIRS S-NPP + NOAA-20, 1 Jan - 11 Sept 2026\nBoundary data: indonesia-geospasial.com (DUKCAPIL 2019)\n51,205 fire points after cleaning"
   },
   {
-    "objectID": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#analytical-approach",
-    "href": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#analytical-approach",
+    "objectID": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#data-preparation-summary",
+    "href": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#data-preparation-summary",
     "title": "Geospatial Analytics for Public Safety",
-    "section": "Analytical Approach",
-    "text": "Analytical Approach"
+    "section": "Data Preparation Summary",
+    "text": "Data Preparation Summary\n\nCombined archive + NRT data from both satellites\nFiltered to Ketapang boundary, reprojected to UTM 49S\n0 duplicates, 0 empty geometries, 0 missing coordinates\nDropped 2,803 low-confidence detections (~5.2%)"
   },
   {
-    "objectID": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#key-findings",
-    "href": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#key-findings",
+    "objectID": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#first-order-findings",
+    "href": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#first-order-findings",
     "title": "Geospatial Analytics for Public Safety",
-    "section": "Key Findings",
-    "text": "Key Findings"
+    "section": "First-Order Findings",
+    "text": "First-Order Findings\n\nKDE (Diggle bandwidth, 239m) shows persistent hotspots in western Ketapang\nQuadrat test rejects spatial randomness (p &lt; 2.2e-16)\nFire activity intensified sharply Aug-Sep (93% of all detections)"
   },
   {
-    "objectID": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#visual-evidence",
-    "href": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#visual-evidence",
+    "objectID": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#second-order-findings",
+    "href": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#second-order-findings",
     "title": "Geospatial Analytics for Public Safety",
-    "section": "Visual Evidence",
-    "text": "Visual Evidence"
+    "section": "Second-Order Findings",
+    "text": "Second-Order Findings\n\nG, F, K, L functions all confirm clustering vs CSR\nClustering persists across all tested distances up to 5km\nNo sign of clustering effect weakening within tested range"
+  },
+  {
+    "objectID": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#value-added-analysis",
+    "href": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#value-added-analysis",
+    "title": "Geospatial Analytics for Public Safety",
+    "section": "Value-Added Analysis",
+    "text": "Value-Added Analysis\n\nCompared K-function across Pre-escalation, Onset, Crisis phases\nPre-escalation phase shows higher intensity-normalised clustering than Crisis\nSuggests different fire origin patterns between quiet and crisis periods"
+  },
+  {
+    "objectID": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#integrated-interpretation",
+    "href": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#integrated-interpretation",
+    "title": "Geospatial Analytics for Public Safety",
+    "section": "Integrated Interpretation",
+    "text": "Integrated Interpretation\nFires concentrate in specific areas, intensify sharply during the dry season, and show genuine spatial clustering rather than random occurrence - with clustering character differing between quiet and crisis periods."
   },
   {
     "objectID": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#limitations",
     "href": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#limitations",
     "title": "Geospatial Analytics for Public Safety",
     "section": "Limitations",
-    "text": "Limitations"
+    "text": "Limitations\n\nLow-confidence detections excluded (~5.2% of data)\nK/L functions bounded to 5km; true clustering scale not fully captured\nVIIRS detection limitations (cloud/smoke cover, ~375m resolution)\nBoundary dataset is from 2019\nObservation period covers partial year only"
   },
   {
     "objectID": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#public-safety-implications",
     "href": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#public-safety-implications",
     "title": "Geospatial Analytics for Public Safety",
     "section": "Public-Safety Implications",
-    "text": "Public-Safety Implications"
+    "text": "Public-Safety Implications\n\nHotspot areas can prioritise monitoring and rapid-response resources\nJul-Aug window is critical for pre-positioning resources\nDifferentiated response: targeted early-season intervention vs broad crisis-phase containment\nFindings describe pattern, not cause - land-use data needed for full risk model"
   },
   {
-    "objectID": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#research-question-1",
-    "href": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#research-question-1",
+    "objectID": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#references",
+    "href": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#references",
     "title": "Geospatial Analytics for Public Safety",
-    "section": "Research Question",
-    "text": "Research Question"
-  },
-  {
-    "objectID": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#study-area-and-data-1",
-    "href": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#study-area-and-data-1",
-    "title": "Geospatial Analytics for Public Safety",
-    "section": "Study Area and Data",
-    "text": "Study Area and Data"
-  },
-  {
-    "objectID": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#analytical-approach-1",
-    "href": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#analytical-approach-1",
-    "title": "Geospatial Analytics for Public Safety",
-    "section": "Analytical Approach",
-    "text": "Analytical Approach"
-  },
-  {
-    "objectID": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#key-findings-1",
-    "href": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#key-findings-1",
-    "title": "Geospatial Analytics for Public Safety",
-    "section": "Key Findings",
-    "text": "Key Findings"
-  },
-  {
-    "objectID": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#visual-evidence-1",
-    "href": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#visual-evidence-1",
-    "title": "Geospatial Analytics for Public Safety",
-    "section": "Visual Evidence",
-    "text": "Visual Evidence"
-  },
-  {
-    "objectID": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#limitations-1",
-    "href": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#limitations-1",
-    "title": "Geospatial Analytics for Public Safety",
-    "section": "Limitations",
-    "text": "Limitations"
-  },
-  {
-    "objectID": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#public-safety-implications-1",
-    "href": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#public-safety-implications-1",
-    "title": "Geospatial Analytics for Public Safety",
-    "section": "Public-Safety Implications",
-    "text": "Public-Safety Implications"
+    "section": "References",
+    "text": "References\nNASA FIRMS (2026). VIIRS S-NPP and NOAA-20 Active Fire Data, Ketapang Regency.\nIndonesia Geospasial (2019). Batas Administrasi Kabupaten/Kota Tahun 2019 (DUKCAPIL).\nBaddeley, A., Rubak, E., and Turner, R. (2015).\nSpatial Point Patterns: Methodology and Applications with R."
   }
 ]

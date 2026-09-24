@@ -1,45 +1,79 @@
 ---
 title: "Geospatial Analytics for Public Safety"
-subtitle: "Take-home Exercise 1 — Executive Summary"
-author: "Abinav"
+subtitle: "Take-home Exercise 1: Forest-Fire Events in Ketapang Regency"
 date: "today"
+date-modified: last-modified
 format: revealjs
+execute:
+  echo: false
+  eval: true
+  message: false
+  warning: false
+  freeze: true
 editor: visual
 ---
 
 ## Research Question
 
-## Study Area and Data
-
-## Analytical Approach
-
-## Key Findings
-
-## Visual Evidence
-
-## Limitations
-
-## Public-Safety Implications
-
----
-title: "Geospatial Analytics for Public Safety"
-subtitle: "Take-home Exercise 1 — Executive Summary"
-author: "Abinav"
-date: "today"
-format: revealjs
-editor: visual
----
-
-## Research Question
+Where are forest-fire events concentrated within Ketapang Regency, and how does their spatial distribution and interaction change across the observed 2026 period, particularly as the dry season progresses.
 
 ## Study Area and Data
 
-## Analytical Approach
+- Study area: Ketapang Regency, West Kalimantan, Indonesia
+- Fire data: NASA FIRMS, VIIRS S-NPP + NOAA-20, 1 Jan - 11 Sept 2026
+- Boundary data: indonesia-geospasial.com (DUKCAPIL 2019)
+- 51,205 fire points after cleaning
 
-## Key Findings
+## Data Preparation Summary
 
-## Visual Evidence
+- Combined archive + NRT data from both satellites
+- Filtered to Ketapang boundary, reprojected to UTM 49S
+- 0 duplicates, 0 empty geometries, 0 missing coordinates
+- Dropped 2,803 low-confidence detections (\~5.2%)
+
+## First-Order Findings
+
+- KDE (Diggle bandwidth, 239m) shows persistent hotspots in western Ketapang
+- Quadrat test rejects spatial randomness (p \< 2.2e-16)
+- Fire activity intensified sharply Aug-Sep (93% of all detections)
+
+## Second-Order Findings
+
+- G, F, K, L functions all confirm clustering vs CSR
+- Clustering persists across all tested distances up to 5km
+- No sign of clustering effect weakening within tested range
+
+## Value-Added Analysis
+
+- Compared K-function across Pre-escalation, Onset, Crisis phases
+- Pre-escalation phase shows higher intensity-normalised clustering than Crisis
+- Suggests different fire origin patterns between quiet and crisis periods
+
+## Integrated Interpretation
+
+Fires concentrate in specific areas, intensify sharply during the dry season, and show genuine spatial clustering rather than random occurrence - with clustering character differing between quiet and crisis periods.
 
 ## Limitations
 
+- Low-confidence detections excluded (\~5.2% of data)
+- K/L functions bounded to 5km; true clustering scale not fully captured
+- VIIRS detection limitations (cloud/smoke cover, \~375m resolution)
+- Boundary dataset is from 2019
+- Observation period covers partial year only
+
 ## Public-Safety Implications
+
+- Hotspot areas can prioritise monitoring and rapid-response resources
+- Jul-Aug window is critical for pre-positioning resources
+- Differentiated response: targeted early-season intervention vs broad crisis-phase containment
+- Findings describe pattern, not cause - land-use data needed for full risk model
+
+## References
+
+NASA FIRMS (2026). VIIRS S-NPP and NOAA-20 Active Fire Data, Ketapang Regency.
+
+Indonesia Geospasial (2019). Batas Administrasi Kabupaten/Kota Tahun 2019 (DUKCAPIL).
+
+Baddeley, A., Rubak, E., and Turner, R. (2015).
+
+Spatial Point Patterns: Methodology and Applications with R.

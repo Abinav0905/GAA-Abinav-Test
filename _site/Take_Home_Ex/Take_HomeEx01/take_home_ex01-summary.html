@@ -9,7 +9,7 @@
 <link href="../../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles"><meta charset="utf-8">
   <meta name="generator" content="quarto-1.9.38">
 
-  <meta name="author" content="Abinav">
+  <meta name="dcterms.date" content="2026-09-24">
   <title>GAA-Abinav-Test – Geospatial Analytics for Public Safety</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -131,59 +131,88 @@
 
 <section id="title-slide" class="quarto-title-block center">
   <h1 class="title">Geospatial Analytics for Public Safety</h1>
-  <p class="subtitle">Take-home Exercise 1 — Executive Summary</p>
+  <p class="subtitle">Take-home Exercise 1: Forest-Fire Events in Ketapang Regency</p>
 
 <div class="quarto-title-authors">
-<div class="quarto-title-author">
-<div class="quarto-title-author-name">
-Abinav 
-</div>
-</div>
 </div>
 
-  <p class="date">today</p>
+  <p class="date">2026-09-24</p>
 </section>
 <section id="research-question" class="slide level2">
 <h2>Research Question</h2>
+<p>Where are forest-fire events concentrated within Ketapang Regency, and how does their spatial distribution and interaction change across the observed 2026 period, particularly as the dry season progresses.</p>
 </section>
 <section id="study-area-and-data" class="slide level2">
 <h2>Study Area and Data</h2>
+<ul>
+<li>Study area: Ketapang Regency, West Kalimantan, Indonesia</li>
+<li>Fire data: NASA FIRMS, VIIRS S-NPP + NOAA-20, 1 Jan - 11 Sept 2026</li>
+<li>Boundary data: indonesia-geospasial.com (DUKCAPIL 2019)</li>
+<li>51,205 fire points after cleaning</li>
+</ul>
 </section>
-<section id="analytical-approach" class="slide level2">
-<h2>Analytical Approach</h2>
+<section id="data-preparation-summary" class="slide level2">
+<h2>Data Preparation Summary</h2>
+<ul>
+<li>Combined archive + NRT data from both satellites</li>
+<li>Filtered to Ketapang boundary, reprojected to UTM 49S</li>
+<li>0 duplicates, 0 empty geometries, 0 missing coordinates</li>
+<li>Dropped 2,803 low-confidence detections (~5.2%)</li>
+</ul>
 </section>
-<section id="key-findings" class="slide level2">
-<h2>Key Findings</h2>
+<section id="first-order-findings" class="slide level2">
+<h2>First-Order Findings</h2>
+<ul>
+<li>KDE (Diggle bandwidth, 239m) shows persistent hotspots in western Ketapang</li>
+<li>Quadrat test rejects spatial randomness (p &lt; 2.2e-16)</li>
+<li>Fire activity intensified sharply Aug-Sep (93% of all detections)</li>
+</ul>
 </section>
-<section id="visual-evidence" class="slide level2">
-<h2>Visual Evidence</h2>
+<section id="second-order-findings" class="slide level2">
+<h2>Second-Order Findings</h2>
+<ul>
+<li>G, F, K, L functions all confirm clustering vs CSR</li>
+<li>Clustering persists across all tested distances up to 5km</li>
+<li>No sign of clustering effect weakening within tested range</li>
+</ul>
+</section>
+<section id="value-added-analysis" class="slide level2">
+<h2>Value-Added Analysis</h2>
+<ul>
+<li>Compared K-function across Pre-escalation, Onset, Crisis phases</li>
+<li>Pre-escalation phase shows higher intensity-normalised clustering than Crisis</li>
+<li>Suggests different fire origin patterns between quiet and crisis periods</li>
+</ul>
+</section>
+<section id="integrated-interpretation" class="slide level2">
+<h2>Integrated Interpretation</h2>
+<p>Fires concentrate in specific areas, intensify sharply during the dry season, and show genuine spatial clustering rather than random occurrence - with clustering character differing between quiet and crisis periods.</p>
 </section>
 <section id="limitations" class="slide level2">
 <h2>Limitations</h2>
+<ul>
+<li>Low-confidence detections excluded (~5.2% of data)</li>
+<li>K/L functions bounded to 5km; true clustering scale not fully captured</li>
+<li>VIIRS detection limitations (cloud/smoke cover, ~375m resolution)</li>
+<li>Boundary dataset is from 2019</li>
+<li>Observation period covers partial year only</li>
+</ul>
 </section>
 <section id="public-safety-implications" class="slide level2">
 <h2>Public-Safety Implications</h2>
+<ul>
+<li>Hotspot areas can prioritise monitoring and rapid-response resources</li>
+<li>Jul-Aug window is critical for pre-positioning resources</li>
+<li>Differentiated response: targeted early-season intervention vs broad crisis-phase containment</li>
+<li>Findings describe pattern, not cause - land-use data needed for full risk model</li>
+</ul>
 </section>
-<section id="research-question-1" class="slide level2">
-<h2>Research Question</h2>
-</section>
-<section id="study-area-and-data-1" class="slide level2">
-<h2>Study Area and Data</h2>
-</section>
-<section id="analytical-approach-1" class="slide level2">
-<h2>Analytical Approach</h2>
-</section>
-<section id="key-findings-1" class="slide level2">
-<h2>Key Findings</h2>
-</section>
-<section id="visual-evidence-1" class="slide level2">
-<h2>Visual Evidence</h2>
-</section>
-<section id="limitations-1" class="slide level2">
-<h2>Limitations</h2>
-</section>
-<section id="public-safety-implications-1" class="slide level2">
-<h2>Public-Safety Implications</h2>
+<section id="references" class="slide level2">
+<h2>References</h2>
+<p>NASA FIRMS (2026). VIIRS S-NPP and NOAA-20 Active Fire Data, Ketapang Regency.</p>
+<p>Indonesia Geospasial (2019). Batas Administrasi Kabupaten/Kota Tahun 2019 (DUKCAPIL).</p>
+<p>Baddeley, A., Rubak, E., and Turner, R. (2015).</p>
+<p>Spatial Point Patterns: Methodology and Applications with R.</p>
 
 
 </section>
