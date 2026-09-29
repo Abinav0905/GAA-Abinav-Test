@@ -5,11 +5,11 @@ date: "today"
 date-modified: last-modified
 format: html
 execute:
-echo: true
-eval: true
-message: false
-warning: false
-freeze: true
+  echo: true
+  eval: true
+  message: false
+  warning: false
+  freeze: true
 editor: visual
 toc: true
 toc-location: right
