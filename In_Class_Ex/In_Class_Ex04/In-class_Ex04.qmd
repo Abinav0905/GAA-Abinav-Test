@@ -98,7 +98,7 @@ bw_AIC <- bw.gwr(GDPPC ~ 1,
 bw_AIC
 ```
 
-## Computing geographically weighted summary statistics
+### Computing geographically weighted summary statistics
 
 The code chunk below computes geographically weighted summary statistics by using gwss() of GWmodel package. The analysis is performed using adaptive distance weighted. The distance is derived using AICc method and the kernel method used is bisquare.
 
@@ -112,7 +112,7 @@ gw_stat <- gwss(data = hunan_sp,
                 longlat = T) 
 ```
 
-## Preparing the output data
+### Preparing the output data
 ```{r}
 gwstat_df <- as.data.frame(gw_stat$SDF)
 ```
@@ -121,7 +121,7 @@ gwstat_df <- as.data.frame(gw_stat$SDF)
 hunan_gstat <- cbind(hunan_sf, gwstat_df)
 ```
 
-##Visualising geographically weighted summary statistics
+### Visualising geographically weighted summary statistics
 ```{r}
 #| fig-height: 8
 #| echo: false
@@ -138,5 +138,140 @@ tm_shape(hunan_gstat) +
   tm_layout(legend.position = c("left", "bottom"))
 ```
 
+## GWSS with Fixed Bandwidth
+### Determine fixed bandwidth
 
+Cross Validation
+```{r}
+bw_CV <- bw.gwr(GDPPC ~ 1, 
+             data = hunan_sp,
+             approach = "CV",
+             adaptive = FALSE, 
+             kernel = "bisquare", 
+             longlat = T)
+```
 
+AICc
+```{r}
+bw_AIC <- bw.gwr(GDPPC ~ 1, 
+             data = hunan_sp,
+             approach ="AICc",
+             adaptive = FALSE, 
+             kernel = "bisquare", 
+             longlat = T)
+```
+### Computing fixed bandwidth GWSS
+
+```{r}
+gwstat <- gwss(data = hunan_sp,
+               vars = "GDPPC",
+               bw = bw_AIC,
+               kernel = "bisquare",
+               adaptive = FALSE,
+               quantile = TRUE,
+               longlat = T)
+```
+
+### Preparing the output data
+```{r}
+gwstat_df <- as.data.frame(gwstat$SDF)
+```
+
+```{r}
+hunan_gstat <- cbind(hunan_sf, gwstat_df)
+```
+
+### Visualising fixed bandwidth geographically weighted mean
+
+```{r}
+tm_shape(hunan_gstat) +
+  tm_polygons(fill = "GDPPC_LM",
+              fill.scale = tm_scale_intervals(
+                style = "quantile",
+                n = 5,
+                values = "brewer.blues"),
+              fill.legend = tm_legend(
+                title = "local Mean")) +
+  tm_borders(fill_alpha = 0.5) +
+  tm_title("Distribution of geographically wieghted mean") + 
+  tm_layout(legend.position = c("left", "bottom"))
+```
+
+## Geographically Weighted Correlation
+### Conventional Statistical Solution
+```{r}
+ggscatterstats(
+  data = hunan2012, 
+  x = Agri, 
+  y = GDPPC,
+  xlab = "Gross Agriculture Output", 
+  ylab = "GDP per capita", 
+  label.var = County, 
+  label.expression = Agri > 10000 & GDPPC > 50000, 
+  point.label.args = list(alpha = 0.7, size = 4, color = "grey50"),
+  xfill = "#CC79A7", 
+  yfill = "#009E73", 
+  title = "Relationship between GDP PC and Gross Agriculture Output")
+```
+### GeoVisualization
+```{r}
+tm_shape(hunan_sf) + 
+  tm_polygons(
+    fill = "GDPPC",
+    fill.scale = tm_scale_intervals(
+      n = 5,
+      style = "quantile",
+      values = "brewer.oranges")) +
+  tm_borders(fill_alpha = 0.25,
+             lwd = 0.5) +
+  tm_title("Distribution of GDP per capita") +
+  tm_layout(legend.position = c("left", "bottom"))
+```
+## Geospatial analytics solution
+### Determine the bandwidth
+
+```{r}
+bw <- bw.gwr(GDPPC ~ GIO, 
+             data = hunan_sp, 
+             approach = "AICc",
+             kernel = "bisquare",
+             adaptive = TRUE)
+```
+### Computing gwCorrelation
+```{r}
+gwstats <- gwss(hunan_sp, 
+                vars = c("GDPPC", "GIO"), 
+                bw = bw,
+                kernel = "bisquare",
+                adaptive = TRUE, 
+                longlat = T)
+```
+
+### Extracting the Result
+```{r}
+gwstat_df <- as.data.frame(gwstats$SDF) %>%
+  select(c(12,13)) %>%
+  rename(gwCorr = Corr_GDPPC.GIO,
+         gwSpearman = Spearman_rho_GDPPC.GIO)
+```
+
+```{r}
+hunan_Corr <- cbind(hunan_sf, gwstat_df)
+```
+
+## Visualising Local Correlation
+
+```{r}
+tm_shape(hunan_Corr) +
+  tm_polygons(fill = "gwSpearman",
+              fill.scale = tm_scale_intervals(
+                style = "quantile",
+                n = 5,
+                values = "brewer.blues"),
+              fill.legend = tm_legend(
+                title = "local Spearman Rho")) +
+  tm_borders(fill_alpha = 0.5) +
+  tm_title("Local Spearman Rho", 
+  size = 2.0) +
+  tm_layout(frame = TRUE)
+```
