@@ -31,6 +31,10 @@ website:
         menu:
         - text: Exercise 4
           href: In_Class_Ex/In_Class_Ex04/In-class_Ex04.html
+        - text: Exercise 5
+          href: In_Class_Ex/In_Class_Ex04/In-class_Ex05.html
+        - text: Exercise 4
+          href: In_Class_Ex/In_Class_Ex04/In-class_Ex06.html
     right:
       - href: index.qmd
         text: Home
