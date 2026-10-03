@@ -22,9 +22,9 @@ website:
         - text: Exercise 6
           href: Hands_on_Ex/Hands_onEx06/hands_on_ex06.html
         - text: Exercise 7
-          href: Hands_on_Ex/Hands_onEx06/hands_on_ex07.html
+          href: Hands_on_Ex/Hands_onEx07/hands_on_ex07.html
         - text: Exercise 8
-          href: Hands_on_Ex/Hands_onEx06/hands_on_ex08.html
+          href: Hands_on_Ex/Hands_onEx07/hands_on_ex08.html
       - text: Take-home Exercise
         menu:
         - text: "Exercise 1: Executive Summary"
@@ -36,9 +36,9 @@ website:
         - text: Exercise 4
           href: In_Class_Ex/In_Class_Ex04/In-class_Ex04.html
         - text: Exercise 5
-          href: In_Class_Ex/In_Class_Ex04/In_class_Ex05.html
+          href: In_Class_Ex/In_Class_Ex05/In_class_Ex05.html
         - text: Exercise 4
-          href: In_Class_Ex/In_Class_Ex04/In_class_Ex06.html
+          href: In_Class_Ex/In_Class_Ex06/In_class_Ex06.html
     right:
       - href: index.qmd
         text: Home
