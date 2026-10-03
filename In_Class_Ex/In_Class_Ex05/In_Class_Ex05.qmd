@@ -97,4 +97,67 @@ tm_shape(lisa_sig) +
   tm_layout(legend.title.size = 1.25)
 ```
 
-## Visualizing p-value of local 
+## Computing Local Gi* Statistics
+
+```{r}
+wm_idw <- hunan_GDPPC %>%
+  mutate(nb = include_self(
+    st_contiguity(geometry)),
+    wts = st_inverse_distance(nb, 
+                              geometry, 
+                              scale = 1,
+                              alpha = 1),
+         .before = 1)
+```
+
+```{r}
+HCSA <- wm_idw %>% 
+  mutate(local_Gi = local_gstar_perm(
+    GDPPC, nb, wts, nsim = 99),
+         .before = 1) %>%
+  unnest(local_Gi)
+```
+
+## Visualising Gi*
+
+```{r}
+tmap_mode("plot")
+tm_shape(HCSA) +
+  tm_fill("gi_star") + 
+  tm_borders(fill_alpha = 0.5) +
+  tm_view(set.zoom.limits = c(6,8)) +
+  tm_title(
+    "local G*i for GDP per capita")
+```
+## Visualising p-value of local Gi*
+
+```{r}
+tmap_mode("plot")
+tm_shape(HCSA) +
+  tm_polygons(
+    fill = "p_sim",
+    fill.scale = tm_scale_intervals(
+      breaks = c(0, 0.001, 0.01, 0.05, 1.0),
+      labels = c("p < 0.001", "p < 0.01", "p < 0.05", "Not Significant"),
+      values = c("#de2d26", "#fc9272", "#fee0d2", "#e0e0e0")),
+    fill.legend = tm_legend(
+      title = "p-values")
+    ) + 
+  tm_title("p-values of G*i for GDP per capita") +
+  tm_borders(fill_alpha = 0.5)
+```
+
+## Visualising hot spot and cold spot areas
+
+```{r}
+HCSA_sig <- HCSA  %>%
+  filter(p_sim < 0.05)
+tmap_mode("plot")
+tm_shape(HCSA) +
+  tm_polygons() +
+  tm_borders(fill_alpha = 0.5) +
+tm_shape(HCSA_sig) +
+  tm_polygons(fill = "cluster") + 
+  tm_borders(fill_alpha = 0.4) +
+  tm_title("Hot and Cold Spots map for GDP per capita")
+```
