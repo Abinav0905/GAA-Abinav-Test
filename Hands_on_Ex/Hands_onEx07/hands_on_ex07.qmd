@@ -1,0 +1,749 @@
+---
+title: "Calibrating Hedonic Pricing Model for Private Highrise Property with GWR Method"
+subtitle: "Hands-on Exercise 7"
+date: "today"
+date-modified: last-modified
+format: html
+execute:
+  echo: true
+  eval: true
+  message: false
+  warning: false
+  freeze: true
+editor: visual
+toc: true
+toc-location: right
+---
+
+## Getting Started
+
+This exercise is about pricing condos. The question is simple: what makes one condo sell for more than another, and does that answer change depending on where in Singapore the condo is? We start with a normal regression that gives one answer for the whole island, then switch to geographically weighted regression (GWR), which lets the answer change from place to place.
+
+```{r}
+set.seed(1234)
+pacman::p_load(olsrr, corrplot, ggpubr, 
+               sf, sfdep, GWmodel, tmap, 
+               tidyverse, gtsummary,
+               performance, RColorBrewer)
+```
+
+## Geospatial Data Wrangling
+
+### Importing Geospatial Data
+
+```{r}
+# URA Master Plan 2014 subzone boundary - ESRI shapefile
+mpsz <- st_read(dsn = "data/geospatial/MasterPlan2014SubzoneBoundaryNoSea.geojson")
+```
+
+### Updating CRS Information
+
+```{r}
+mpsz_svy21 <- mpsz %>% 
+  st_transform(3414)
+```
+
+```{r}
+st_crs(mpsz_svy21)
+```
+
+```{r}
+st_bbox(mpsz_svy21)
+```
+
+The Master Plan boundary file does not carry proper CRS information, so we transform it to SVY21 (EPSG 3414), the local projected system measured in metres. Getting this right matters later, because the GWR bandwidth is measured in whatever units the coordinates use.
+
+## Aspatial Data Wrangling
+
+### Importing the Aspatial Data
+
+```{r}
+# Condo resale prices 2015 - csv
+condo_resale <- read_csv("data/aspatial/Condo_resale_2015.csv")
+```
+
+```{r}
+glimpse(condo_resale)
+```
+
+```{r}
+head(condo_resale$LONGITUDE)
+head(condo_resale$LATITUDE)
+```
+
+```{r}
+summary(condo_resale)
+```
+
+### Converting Aspatial Data Frame into a sf Object
+
+```{r}
+condo_resale.sf <- condo_resale %>% 
+  st_as_sf(coords = c("LONGITUDE", "LATITUDE"),
+           crs = 4326) %>%
+  st_transform(crs = 3414)
+```
+
+```{r}
+head(condo_resale.sf)
+```
+
+The condo data only has longitude and latitude columns, so it starts out as a plain table. We tell sf the coordinates are WGS84 first, then transform to SVY21, which puts the condos in the same coordinate system as the boundary layer.
+
+## Exploratory Data Analysis (EDA)
+
+### EDA Using Statistical Graphics
+
+```{r}
+ggplot(data = condo_resale.sf, 
+       aes(x = `SELLING_PRICE`)) +
+  geom_histogram(bins = 20, 
+                 color = "black", 
+                 fill = "light blue")
+```
+
+```{r}
+condo_resale.sf <- condo_resale.sf %>%
+  mutate(`LOG_SELLING_PRICE` = log(SELLING_PRICE))
+```
+
+```{r}
+ggplot(data = condo_resale.sf, 
+       aes(x = `LOG_SELLING_PRICE`)) +
+  geom_histogram(bins = 20, 
+                 color = "black", 
+                 fill = "light blue")
+```
+
+Selling price is right skewed. Most units sell at lower prices and a few very expensive ones stretch out the tail. Taking the log pulls that tail in, and the second histogram looks much closer to a bell shape, which is what regression models prefer.
+
+### Multiple Histogram Plots Distribution of Variables
+
+```{r}
+AREA_SQM <- ggplot(data = condo_resale.sf, 
+                   aes(x = `AREA_SQM`)) +
+  geom_histogram(bins = 20, 
+                 color = "black", 
+                 fill = "light blue")
+
+AGE <- ggplot(data = condo_resale.sf, 
+              aes(x = `AGE`)) +
+  geom_histogram(bins = 20, 
+                 color = "black", 
+                 fill = "light blue")
+
+PROX_CBD <- ggplot(data = condo_resale.sf, 
+                   aes(x = `PROX_CBD`)) +
+  geom_histogram(bins = 20, 
+                 color = "black", 
+                 fill = "light blue")
+
+PROX_CHILDCARE <- ggplot(data = condo_resale.sf, 
+                         aes(x = `PROX_CHILDCARE`)) + 
+  geom_histogram(bins = 20, 
+                 color = "black", 
+                 fill = "light blue")
+
+PROX_ELDERLYCARE <- ggplot(data = condo_resale.sf, 
+                           aes(x = `PROX_ELDERLYCARE`)) +
+  geom_histogram(bins = 20, 
+                 color = "black", 
+                 fill = "light blue")
+
+PROX_URA_GROWTH_AREA <- ggplot(data = condo_resale.sf, 
+                               aes(x = `PROX_URA_GROWTH_AREA`)) +
+  geom_histogram(bins = 20, 
+                 color = "black", 
+                 fill = "light blue")
+
+PROX_HAWKER_MARKET <- ggplot(data = condo_resale.sf, 
+                             aes(x = `PROX_HAWKER_MARKET`)) +
+  geom_histogram(bins = 20, 
+                 color = "black", 
+                 fill = "light blue")
+
+PROX_KINDERGARTEN <- ggplot(data = condo_resale.sf, 
+                            aes(x = `PROX_KINDERGARTEN`)) +
+  geom_histogram(bins = 20, 
+                 color = "black", 
+                 fill = "light blue")
+
+PROX_MRT <- ggplot(data = condo_resale.sf, 
+                   aes(x = `PROX_MRT`)) +
+  geom_histogram(bins = 20, 
+                 color = "black", 
+                 fill = "light blue")
+
+PROX_PARK <- ggplot(data = condo_resale.sf, 
+                    aes(x = `PROX_PARK`)) +
+  geom_histogram(bins = 20, 
+                 color = "black", 
+                 fill = "light blue")
+
+PROX_PRIMARY_SCH <- ggplot(data = condo_resale.sf, 
+                           aes(x = `PROX_PRIMARY_SCH`)) +
+  geom_histogram(bins = 20, 
+                 color = "black", 
+                 fill = "light blue")
+
+PROX_TOP_PRIMARY_SCH <- ggplot(data = condo_resale.sf, 
+                               aes(x = `PROX_TOP_PRIMARY_SCH`)) +
+  geom_histogram(bins = 20, 
+                 color = "black", 
+                 fill = "light blue")
+```
+
+```{r}
+ggarrange(AREA_SQM, AGE, PROX_CBD, PROX_CHILDCARE, 
+          PROX_ELDERLYCARE, PROX_URA_GROWTH_AREA,
+          PROX_HAWKER_MARKET, PROX_KINDERGARTEN, PROX_MRT,
+          PROX_PARK, PROX_PRIMARY_SCH, PROX_TOP_PRIMARY_SCH,  
+          ncol = 3, nrow = 4)
+```
+
+Putting all the predictors side by side makes it easy to spot which ones are skewed. Most of the distance variables bunch up near zero with a long tail, which fits the idea that most condos sit close to an MRT, a bus stop or a childcare centre, and only a few are far from everything.
+
+### Drawing Statistical Point Map
+
+```{r}
+tmap_mode("view")
+
+tm_shape(mpsz_svy21) +
+  tm_polygons() +
+tm_shape(condo_resale.sf) +  
+  tm_dots(fill = "SELLING_PRICE",
+          fill_alpha = 0.6,
+          size = 0.5,
+          fill.scale = tm_scale_intervals(
+            style = "quantile")) +
+  tm_view(set_zoom_limits = c(11,14))
+
+tmap_mode("plot")
+```
+
+Worth looking at where the priciest points sit before we model anything. If price clearly varies by area, one single regression line for the whole island is probably not going to be enough.
+
+### Extra: Median Resale Price by Planning Area
+
+```{r}
+condo_pln <- condo_resale.sf %>%
+  st_join(mpsz_svy21 %>% select(PLN_AREA_N)) %>%
+  st_drop_geometry() %>%
+  filter(!is.na(PLN_AREA_N)) %>%
+  group_by(PLN_AREA_N) %>%
+  summarise(median_price = median(SELLING_PRICE),
+            n_units = n())
+```
+
+```{r}
+condo_pln %>%
+  arrange(desc(median_price)) %>%
+  head(10)
+```
+
+```{r}
+mpsz_price <- mpsz_svy21 %>%
+  group_by(PLN_AREA_N) %>%
+  summarise() %>%
+  left_join(condo_pln, by = "PLN_AREA_N")
+```
+
+```{r}
+tm_shape(mpsz_price) +
+  tm_polygons(fill = "median_price",
+              fill.scale = tm_scale_intervals(
+                style = "quantile",
+                n = 5,
+                values = "brewer.blues"),
+              fill.legend = tm_legend(
+                title = "Median resale price")) +
+  tm_borders() +
+  tm_title("Median condo resale price by planning area")
+```
+
+The point map is busy, so here the prices are rolled up to planning area level and the median is mapped instead. It is easier to read as a quick overview. The number of units per area is kept in the table above, in case some areas only have a handful of sales and their median should be taken with a pinch of salt.
+
+## Hedonic Pricing Modelling in R
+
+### Simple Linear Regression Method
+
+```{r}
+condo.slr <- lm(formula = SELLING_PRICE ~ AREA_SQM, 
+                data = condo_resale.sf)
+```
+
+```{r}
+summary(condo.slr)
+```
+
+```{r}
+ggplot(data = condo_resale.sf,  
+       aes(x = `AREA_SQM`, y = `SELLING_PRICE`)) +
+  geom_point() +
+  geom_smooth(method = lm)
+```
+
+The simple model, price against floor area only, explains about 45% of the variation, and floor area is clearly significant. It makes a useful baseline, but it ignores everything else about a condo, like its age and where it is. The scatterplot also shows a few very expensive units sitting well above the line, and those outliers pull the fit around.
+
+### Multiple Linear Regression Method
+
+#### Visualising the Relationships of the Independent Variables
+
+```{r}
+corrplot(cor(condo_resale[, 5:23]), 
+         diag = FALSE, 
+         order = "AOE",
+         tl.pos = "td", 
+         tl.cex = 0.5, 
+         method = "number", 
+         type = "upper")
+```
+
+Freehold and 99 year leasehold are almost mirror images of each other, which makes sense because a unit is one or the other. Keeping both would cause multicollinearity, so only freehold goes into the model.
+
+#### Building a Hedonic Pricing Model Using Multiple Linear Regression Method
+
+```{r}
+condo.mlr <- lm(
+  formula = SELLING_PRICE ~ AREA_SQM + AGE  + 
+    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
+    PROX_URA_GROWTH_AREA + PROX_HAWKER_MARKET   +
+    PROX_KINDERGARTEN   + PROX_MRT  + PROX_PARK +
+    PROX_PRIMARY_SCH + PROX_TOP_PRIMARY_SCH +
+    PROX_SHOPPING_MALL  + PROX_SUPERMARKET + 
+    PROX_BUS_STOP   + NO_Of_UNITS + 
+    FAMILY_FRIENDLY + FREEHOLD, 
+  data = condo_resale.sf)
+```
+
+```{r}
+summary(condo.mlr)
+```
+
+Not every predictor pulls its weight. A few of them, like distance to hawker markets, top primary schools and supermarkets, have large p values, which means there is no evidence they matter once the other variables are already in the model.
+
+#### Revising the Model
+
+```{r}
+condo.mlr1 <- lm(
+  formula = SELLING_PRICE ~ AREA_SQM + AGE + 
+    PROX_CBD + PROX_CHILDCARE + PROX_MRT +
+    PROX_ELDERLYCARE    + PROX_URA_GROWTH_AREA +
+    PROX_PARK   + PROX_PRIMARY_SCH + 
+    PROX_SHOPPING_MALL  + PROX_BUS_STOP + 
+    NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD,
+  data = condo_resale.sf)
+```
+
+```{r}
+summary(condo.mlr1)
+```
+
+After dropping the insignificant variables, every remaining predictor is significant at the 95% level. Adjusted R squared barely moves (0.6474 before, 0.6472 after), so we lose almost nothing by using the simpler model.
+
+### Extra: Stepwise Variable Selection with olsrr
+
+```{r}
+condo_resale_df <- condo_resale.sf %>%
+  st_drop_geometry()
+
+condo.mlr.df <- update(condo.mlr, data = condo_resale_df)
+```
+
+```{r}
+ols_step_both_p(condo.mlr.df)
+```
+
+The model above was trimmed by hand. As a cross check, olsrr can do stepwise selection on the full model, so we can compare which variables it keeps against the ones removed manually. olsrr was loaded at the start but the writeup never uses it, so this puts it to work. It runs on a copy of the data without the geometry column so the spatial column does not get in the way.
+
+#### Preparing Publication Quality Table: gtsummary Method
+
+```{r}
+tbl_regression(condo.mlr1, intercept = TRUE)
+```
+
+```{r}
+tbl_regression(condo.mlr1, 
+               intercept = TRUE) %>% 
+  add_glance_source_note(
+    label = list(sigma ~ "\U03C3"),
+    include = c(r.squared, adj.r.squared, 
+                AIC, statistic,
+                p.value, sigma))
+```
+
+gtsummary turns the regression output into a clean table that could go straight into a report. Adding the model statistics underneath (R squared, AIC, sigma) saves repeating them in the text.
+
+#### Regression Diagnostics
+
+##### Multicollinearity Test
+
+```{r}
+check_collinearity(condo.mlr1)
+```
+
+```{r}
+mlr.vif <- check_collinearity(condo.mlr1)
+plot(mlr.vif)
+```
+
+All the VIF values are well under 10, so multicollinearity is not a problem in the revised model.
+
+##### Test for Non-Linearity
+
+```{r}
+check_model(condo.mlr1,
+            check = "linearity")
+```
+
+The residuals scatter around the zero line without an obvious curve, so assuming a linear relationship is reasonable.
+
+##### Test for Normality Assumption
+
+```{r}
+check_normality(condo.mlr1)
+```
+
+```{r}
+plot(check_normality(condo.mlr1), 
+     type = "qq")
+```
+
+```{r}
+check_model(condo.mlr1,
+            check = "normality")
+```
+
+The formal test rejects normality, but with over 1,400 observations that test almost always rejects. The Q-Q plot and the residual histogram look much closer to normal, so this is more of a mild concern than a deal breaker.
+
+### Extra: Does a Log Price Model Fix the Normality Problem?
+
+```{r}
+condo.mlr.log <- lm(
+  formula = LOG_SELLING_PRICE ~ AREA_SQM + AGE + 
+    PROX_CBD + PROX_CHILDCARE + PROX_MRT +
+    PROX_ELDERLYCARE    + PROX_URA_GROWTH_AREA +
+    PROX_PARK   + PROX_PRIMARY_SCH + 
+    PROX_SHOPPING_MALL  + PROX_BUS_STOP + 
+    NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD,
+  data = condo_resale.sf)
+```
+
+```{r}
+check_normality(condo.mlr.log)
+```
+
+```{r}
+plot(check_normality(condo.mlr.log), 
+     type = "qq")
+```
+
+Since price was log transformed earlier, the same model is refitted here with log price and run through the same normality checks. Comparing R squared between the two models would not be fair because they predict different things, so the only thing to compare is how the residuals look.
+
+#### Testing for Spatial Autocorrelation
+
+```{r}
+mlr.output <- as.data.frame(condo.mlr1$residuals)
+```
+
+```{r}
+condo_resale.sf <- cbind(condo_resale.sf, 
+                        condo.mlr1$residuals) %>%
+  rename(`MLR_RES` = `condo.mlr1.residuals`)
+```
+
+```{r}
+tmap_mode("view")
+
+tm_shape(mpsz_svy21) +
+  tm_polygons(fill_alpha = 0.4) +
+tm_shape(condo_resale.sf) +  
+  tm_dots(
+    fill = "MLR_RES",
+    size = 0.7,
+    col = "black",
+    fill.scale = tm_scale(
+      n = 10,
+      values = rev(
+        brewer.pal(11, "RdBu")),
+      style = "quantile",
+      midpoint = NA),
+    fill.legend = tm_legend(title = "Residuals")
+  ) + 
+  tm_title("LM Residuals (Quantile Classification)") +
+  tm_layout(legend.outside = TRUE) +
+  tm_view(set_zoom_limits = c(11,14))
+
+tmap_mode("plot")
+```
+
+```{r}
+condo_resale.sf <- condo_resale.sf %>% 
+  mutate(
+    nb = st_dist_band(
+      st_geometry(geometry), 
+                 upper = 1500),
+    wt = st_weights(
+      nb, style = "W"),
+    .before = 1) 
+```
+
+```{r}
+set.seed(1234)
+global_moran_perm(
+  condo_resale.sf$MLR_RES, 
+  nb = condo_resale.sf$nb, 
+  wt = condo_resale.sf$wt,
+  alternative = "two.sided", 
+  nsim = 499)
+```
+
+The residual map is not random, the over and under predictions sit in patches. Moran's I of about 0.14 with a tiny p value confirms the residuals are clustered, which means the global model is missing something spatial. That is the case for moving to GWR.
+
+## Building Hedonic Pricing Models Using GWmodel
+
+### Building Fixed Bandwidth GWR Model
+
+#### Computing Fixed Bandwidth
+
+```{r}
+bw.fixed <- bw.gwr(
+  formula = SELLING_PRICE ~ AREA_SQM + AGE  + 
+    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE    +
+    PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK + 
+    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL   + 
+    PROX_BUS_STOP   + NO_Of_UNITS + FAMILY_FRIENDLY + 
+    FREEHOLD, 
+  data = condo_resale.sf, 
+  approach = "CV", 
+  kernel = "gaussian", 
+  adaptive = FALSE, 
+  longlat = FALSE)
+```
+
+```{r}
+bw.fixed
+```
+
+The bandwidth comes out in metres because the data is in SVY21, a projected system where coordinates are measured in metres. If the data had stayed in WGS84 degrees, the bandwidth would have been in degrees or kilometres instead.
+
+#### GWModel Method: Fixed Bandwidth
+
+```{r}
+gwr.fixed <- gwr.basic(
+  formula = SELLING_PRICE ~ AREA_SQM + AGE  + 
+    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE    +
+    PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
+    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL   + 
+    PROX_BUS_STOP   + NO_Of_UNITS + FAMILY_FRIENDLY + 
+    FREEHOLD, 
+  data = condo_resale.sf, 
+  bw = bw.fixed, 
+  kernel = 'gaussian', 
+  longlat = FALSE)
+```
+
+```{r}
+gwr.fixed
+```
+
+Compared with the global regression, the fixed bandwidth GWR lowers the AICc from about 42,967 to about 42,264, and R squared jumps from 0.65 to 0.89. Some of that gain is probably overfitting, since the bandwidth is only about 971 metres and the model uses over 400 effective parameters. The coefficient summary also has a few extreme values, which hints that the local models become unstable in places with few nearby sales.
+
+### Building Adaptive Bandwidth GWR Model
+
+#### Computing the Adaptive Bandwidth
+
+```{r}
+bw.adaptive <- bw.gwr(
+  formula = SELLING_PRICE ~ AREA_SQM + AGE  + 
+    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE    +
+    PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
+    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL   + 
+    PROX_BUS_STOP   + NO_Of_UNITS + 
+    FAMILY_FRIENDLY + FREEHOLD, 
+  data = condo_resale.sf, 
+  approach = "CV", 
+  kernel = "gaussian", 
+  adaptive = TRUE, 
+  longlat = FALSE)
+```
+
+```{r}
+bw.adaptive
+```
+
+#### Constructing the Adaptive Bandwidth GWR Model
+
+```{r}
+gwr.adaptive <- gwr.basic(
+  formula = SELLING_PRICE ~ AREA_SQM + AGE + 
+    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
+    PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
+    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL + PROX_BUS_STOP +
+    NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD,
+  data = condo_resale.sf, 
+  bw = bw.adaptive, 
+  kernel = 'gaussian', 
+  adaptive = TRUE, 
+  longlat = FALSE)
+```
+
+```{r}
+gwr.adaptive
+```
+
+The adaptive bandwidth uses the 30 nearest condos instead of a fixed distance. Dense areas end up with small neighbourhoods and sparse areas with larger ones, so every local regression has a similar amount of data to work with. Its AICc (about 41,982) beats the fixed bandwidth model (about 42,264), so adaptive is the better calibration here.
+
+### Extra: Choosing the Bandwidth by AICc Instead of CV
+
+```{r}
+gwr_formula <- SELLING_PRICE ~ AREA_SQM + AGE + 
+  PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
+  PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
+  PROX_PRIMARY_SCH + PROX_SHOPPING_MALL + PROX_BUS_STOP +
+  NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD
+
+bw.adaptive.aicc <- bw.gwr(
+  formula = gwr_formula, 
+  data = condo_resale.sf, 
+  approach = "AICc", 
+  kernel = "gaussian", 
+  adaptive = TRUE, 
+  longlat = FALSE)
+```
+
+```{r}
+gwr.adaptive.aicc <- gwr.basic(
+  formula = gwr_formula,
+  data = condo_resale.sf, 
+  bw = bw.adaptive.aicc, 
+  kernel = 'gaussian', 
+  adaptive = TRUE, 
+  longlat = FALSE)
+```
+
+```{r}
+tibble(
+  model = c("Fixed bandwidth (CV)", 
+            "Adaptive bandwidth (CV)", 
+            "Adaptive bandwidth (AICc)"),
+  bandwidth = c(bw.fixed, bw.adaptive, bw.adaptive.aicc),
+  AICc = c(gwr.fixed$GW.diagnostic$AICc,
+           gwr.adaptive$GW.diagnostic$AICc,
+           gwr.adaptive.aicc$GW.diagnostic$AICc)
+)
+```
+
+The writeup mentions two ways to pick the bandwidth, cross validation and AICc, but only runs CV. This is the AICc version, with a small table putting all three GWR models side by side. The fixed bandwidth is in metres while the adaptive ones are counts of nearest neighbours, so only compare the AICc column across rows, not the bandwidth column.
+
+### Visualising GWR Output
+
+#### Converting SDF into sf data.frame
+
+```{r}
+condo_resale.sf.adaptive <- gwr.adaptive$SDF %>%
+  st_as_sf() %>%
+  st_transform(crs = 3414)
+```
+
+```{r}
+glimpse(condo_resale.sf.adaptive)
+```
+
+```{r}
+summary(gwr.adaptive$SDF$yhat)
+```
+
+Every condo now has its own set of coefficients, standard errors, t values, a predicted price and a local R squared. That is the whole point of GWR: one regression per location instead of one for everybody.
+
+### Extra: Did GWR Remove the Spatial Autocorrelation in the Residuals?
+
+```{r}
+set.seed(1234)
+global_moran_perm(
+  condo_resale.sf.adaptive$residual, 
+  nb = condo_resale.sf$nb, 
+  wt = condo_resale.sf$wt,
+  alternative = "two.sided", 
+  nsim = 499)
+```
+
+The global model's residuals were clearly clustered (Moran's I of about 0.14). The fair test of whether GWR did a better job is to run the same Moran's I test on the GWR residuals, using the same distance weights, and compare the two statistics.
+
+#### Visualising Local R2
+
+```{r}
+tmap_mode("view")
+
+tm_shape(mpsz_svy21) +
+  tm_polygons(fill_alpha = 0.1) +
+tm_shape(condo_resale.sf.adaptive) +  
+  tm_dots(fill = "Local_R2",
+          fill.scale = tm_scale_intervals(
+            style = "quantile",
+            n = 5,
+            values = "brewer.blues"),
+          fill.legend = tm_legend(title = "Local R2"),
+          col = "gray60") +
+  tm_view(set_zoom_limits = c(11,14))
+
+tmap_mode("plot")
+```
+
+Local R squared shows where the local model fits well and where it fits poorly. Pockets with low values hint that something important is missing from the model in that area.
+
+#### Visualising Coefficient Estimates
+
+```{r}
+tmap_mode("view")
+
+AREA_SQM_SE <- tm_shape(mpsz_svy21) +
+  tm_polygons(fill_alpha = 0.1) +
+tm_shape(condo_resale.sf.adaptive) +  
+  tm_dots(fill = "AREA_SQM_SE",
+          fill.scale = tm_scale_intervals(
+            style = "quantile",
+            n = 5,
+            values = "brewer.blues"),
+          fill.legend = tm_legend(title = "AREA_SQM_SE"),
+          col = "gray60") +
+  tm_view(set_zoom_limits = c(11,14))
+
+AREA_SQM_TV <- tm_shape(mpsz_svy21) +
+  tm_polygons(fill_alpha = 0.1) +
+tm_shape(condo_resale.sf.adaptive) +  
+  tm_dots(fill = "AREA_SQM_TV",
+          fill.scale = tm_scale_intervals(
+            style = "quantile",
+            n = 5,
+            values = "brewer.blues"),
+          fill.legend = tm_legend(title = "AREA_SQM_TV"),
+          col = "gray60") +
+  tm_view(set_zoom_limits = c(11,14))
+
+tmap_arrange(AREA_SQM_SE, AREA_SQM_TV, 
+             asp = 1, ncol = 2,
+             sync = TRUE)
+
+tmap_mode("plot")
+```
+
+Standard errors and t values tell us how much to trust each local coefficient. A large standard error compared with the coefficient means the estimate is shaky, which usually points to local collinearity or too few neighbours.
+
+### Extra: Where Does Distance to the MRT Matter Most?
+
+```{r}
+tm_shape(mpsz_svy21) +
+  tm_polygons(fill_alpha = 0.1) +
+tm_shape(condo_resale.sf.adaptive) +
+  tm_dots(fill = "PROX_MRT",
+          fill.scale = tm_scale_intervals(
+            style = "quantile",
+            n = 5,
+            values = "brewer.rd_bu"),
+          fill.legend = tm_legend(title = "Local coefficient"),
+          size = 0.4) +
+  tm_title("Local coefficient of PROX_MRT (adaptive GWR)")
+```
+
+The writeup only maps the floor area coefficient, so here is the local coefficient for distance to the nearest MRT as well. A negative value means the price drops the further a condo is from the MRT, and the map shows where that effect is strongest and where it fades or even turns positive. This is something the global regression cannot show, since it gives one MRT coefficient for the whole island.
