@@ -378,7 +378,7 @@ tm_shape(ehsa_f_map) +
             legend.outside = TRUE)
 ```
 
-### Saved Outputs 
+### Saved Outputs
 
 ```{r}
 dir.create("outputs", showWarnings = FALSE)
