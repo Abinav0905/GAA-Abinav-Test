@@ -1,5 +1,5 @@
 ---
-title: "Calibrating Hedonic Pricing Model for Private Highrise Property with GWR Method"
+title: "Modelling Geographical Accessibility"
 subtitle: "Hands-on Exercise 7"
 date: "today"
 date-modified: last-modified
@@ -17,14 +17,13 @@ toc-location: right
 
 ## Getting Started
 
-This exercise is about pricing condos. The question is simple: what makes one condo sell for more than another, and does that answer change depending on where in Singapore the condo is? We start with a normal regression that gives one answer for the whole island, then switch to geographically weighted regression (GWR), which lets the answer change from place to place.
+We split Singapore into small hexagons, work out the travel distance from every hexagon to every eldercare centre, and then turn those distances into an accessibility score using three different methods: Hansen, KD2SFCA and SAM.
 
 ```{r}
 set.seed(1234)
-pacman::p_load(olsrr, corrplot, ggpubr, 
-               sf, sfdep, GWmodel, tmap, 
-               tidyverse, gtsummary,
-               performance, RColorBrewer)
+pacman::p_load(tmap, SpatialAcc, sf, 
+               ggstatsplot, reshape2,
+               tidyverse)
 ```
 
 ## Geospatial Data Wrangling
@@ -32,718 +31,422 @@ pacman::p_load(olsrr, corrplot, ggpubr,
 ### Importing Geospatial Data
 
 ```{r}
-# URA Master Plan 2014 subzone boundary - ESRI shapefile
-mpsz <- st_read(dsn = "data/geospatial/MasterPlan2014SubzoneBoundaryNoSea.geojson")
+mpsz <- st_read(dsn = "data/geospatial", 
+                layer = "MP14_SUBZONE_NO_SEA_PL")
 ```
+
+```{r}
+hexagons <- st_read(dsn = "data/geospatial", 
+                    layer = "hexagons")
+```
+
+```{r}
+eldercare <- st_read(dsn = "data/geospatial", 
+                     layer = "ELDERCARE")
+```
+
+Three layers come in here. The subzone boundary gives us the planning regions, the hexagons are the origins (where people live), and the eldercare points are the destinations (where people want to get to).
 
 ### Updating CRS Information
 
 ```{r}
-mpsz_svy21 <- mpsz %>% 
-  st_transform(3414)
+mpsz <- mpsz %>% st_transform(3414)
+eldercare <- eldercare %>% st_transform(3414)
+hexagons <- hexagons %>% st_transform(3414)
 ```
 
 ```{r}
-st_crs(mpsz_svy21)
+st_crs(mpsz)
+```
+
+All three layers get the same coordinate system, SVY21 (EPSG 3414), which is measured in metres. That matters here because every distance in the accessibility models is in metres.
+
+### Cleaning and Updating Attribute Fields
+
+```{r}
+eldercare <- eldercare %>%
+  select(fid, ADDRESSPOS) %>%
+  mutate(capacity = 100)
+
+hexagons <- hexagons %>%
+  select(fid) %>%
+  mutate(demand = 100)
+```
+
+Both layers have lots of columns we do not need, so only the id and address are kept. Then two new columns are added: demand for every hexagon and capacity for every eldercare centre. Both are set to 100 as a placeholder.
+
+## Aspatial Data Handling and Wrangling
+
+### Importing Distance Matrix
+
+```{r}
+# Origin-destination distance matrix: csv
+ODMatrix <- read_csv("data/aspatial/OD_Matrix.csv", skip = 0)
+```
+
+### Tidying Distance Matrix
+
+```{r}
+distmat <- ODMatrix %>%
+  select(origin_id, destination_id, total_cost) %>%
+  arrange(origin_id, destination_id) %>%
+  pivot_wider(names_from = destination_id, 
+              values_from = total_cost) %>%
+  select(-origin_id)
 ```
 
 ```{r}
-st_bbox(mpsz_svy21)
+distmat_km <- as.matrix(distmat / 1000)
 ```
 
-The Master Plan boundary file does not carry proper CRS information, so we transform it to SVY21 (EPSG 3414), the local projected system measured in metres. Getting this right matters later, because the GWR bandwidth is measured in whatever units the coordinates use.
+The imported file has one row for every origin and destination pair, which makes it a very long list. The accessibility functions want a grid instead, with one row per hexagon and one column per eldercare centre, and pivot_wider() does that reshaping. The arrange() before it keeps the rows and columns in id order so they line up with the hexagon and eldercare tables. Dividing by 1000 turns metres into kilometres.
 
-## Aspatial Data Wrangling
+## Modelling and Visualising Accessibility Using Hansen Method
 
-### Importing the Aspatial Data
-
-```{r}
-# Condo resale prices 2015 - csv
-condo_resale <- read_csv("data/aspatial/Condo_resale_2015.csv")
-```
+### Computing Hansen's Accessibility
 
 ```{r}
-glimpse(condo_resale)
-```
-
-```{r}
-head(condo_resale$LONGITUDE)
-head(condo_resale$LATITUDE)
+acc_Hansen <- data.frame(ac(hexagons$demand,
+                            eldercare$capacity,
+                            distmat_km, 
+                            #d0 = 50,
+                            power = 2, 
+                            family = "Hansen"))
 ```
 
 ```{r}
-summary(condo_resale)
-```
-
-### Converting Aspatial Data Frame into a sf Object
-
-```{r}
-condo_resale.sf <- condo_resale %>% 
-  st_as_sf(coords = c("LONGITUDE", "LATITUDE"),
-           crs = 4326) %>%
-  st_transform(crs = 3414)
+colnames(acc_Hansen) <- "accHansen"
 ```
 
 ```{r}
-head(condo_resale.sf)
-```
-
-The condo data only has longitude and latitude columns, so it starts out as a plain table. We tell sf the coordinates are WGS84 first, then transform to SVY21, which puts the condos in the same coordinate system as the boundary layer.
-
-## Exploratory Data Analysis (EDA)
-
-### EDA Using Statistical Graphics
-
-```{r}
-ggplot(data = condo_resale.sf, 
-       aes(x = `SELLING_PRICE`)) +
-  geom_histogram(bins = 20, 
-                 color = "black", 
-                 fill = "light blue")
+acc_Hansen <- as_tibble(acc_Hansen)
 ```
 
 ```{r}
-condo_resale.sf <- condo_resale.sf %>%
-  mutate(`LOG_SELLING_PRICE` = log(SELLING_PRICE))
+hexagon_Hansen <- bind_cols(hexagons, acc_Hansen)
 ```
 
 ```{r}
-ggplot(data = condo_resale.sf, 
-       aes(x = `LOG_SELLING_PRICE`)) +
-  geom_histogram(bins = 20, 
-                 color = "black", 
-                 fill = "light blue")
+acc_Hansen <- data.frame(ac(hexagons$demand,
+                            eldercare$capacity,
+                            distmat_km, 
+                            #d0 = 50,
+                            power = 0.5, 
+                            family = "Hansen"))
+
+colnames(acc_Hansen) <- "accHansen"
+acc_Hansen <- as_tibble(acc_Hansen)
+hexagon_Hansen <- bind_cols(hexagons, acc_Hansen)
 ```
 
-Selling price is right skewed. Most units sell at lower prices and a few very expensive ones stretch out the tail. Taking the log pulls that tail in, and the second histogram looks much closer to a bell shape, which is what regression models prefer.
+Hansen's measure adds up the eldercare places reachable from each hexagon, giving closer centres more weight than far away ones. The power controls how quickly that weight drops as distance grows. The first chunks do it step by step with a power of 2, and the single chunk does the same job in one go.
 
-### Multiple Histogram Plots Distribution of Variables
+### Visualising Hansen's Accessibility
 
 ```{r}
-AREA_SQM <- ggplot(data = condo_resale.sf, 
-                   aes(x = `AREA_SQM`)) +
-  geom_histogram(bins = 20, 
-                 color = "black", 
-                 fill = "light blue")
-
-AGE <- ggplot(data = condo_resale.sf, 
-              aes(x = `AGE`)) +
-  geom_histogram(bins = 20, 
-                 color = "black", 
-                 fill = "light blue")
-
-PROX_CBD <- ggplot(data = condo_resale.sf, 
-                   aes(x = `PROX_CBD`)) +
-  geom_histogram(bins = 20, 
-                 color = "black", 
-                 fill = "light blue")
-
-PROX_CHILDCARE <- ggplot(data = condo_resale.sf, 
-                         aes(x = `PROX_CHILDCARE`)) + 
-  geom_histogram(bins = 20, 
-                 color = "black", 
-                 fill = "light blue")
-
-PROX_ELDERLYCARE <- ggplot(data = condo_resale.sf, 
-                           aes(x = `PROX_ELDERLYCARE`)) +
-  geom_histogram(bins = 20, 
-                 color = "black", 
-                 fill = "light blue")
-
-PROX_URA_GROWTH_AREA <- ggplot(data = condo_resale.sf, 
-                               aes(x = `PROX_URA_GROWTH_AREA`)) +
-  geom_histogram(bins = 20, 
-                 color = "black", 
-                 fill = "light blue")
-
-PROX_HAWKER_MARKET <- ggplot(data = condo_resale.sf, 
-                             aes(x = `PROX_HAWKER_MARKET`)) +
-  geom_histogram(bins = 20, 
-                 color = "black", 
-                 fill = "light blue")
-
-PROX_KINDERGARTEN <- ggplot(data = condo_resale.sf, 
-                            aes(x = `PROX_KINDERGARTEN`)) +
-  geom_histogram(bins = 20, 
-                 color = "black", 
-                 fill = "light blue")
-
-PROX_MRT <- ggplot(data = condo_resale.sf, 
-                   aes(x = `PROX_MRT`)) +
-  geom_histogram(bins = 20, 
-                 color = "black", 
-                 fill = "light blue")
-
-PROX_PARK <- ggplot(data = condo_resale.sf, 
-                    aes(x = `PROX_PARK`)) +
-  geom_histogram(bins = 20, 
-                 color = "black", 
-                 fill = "light blue")
-
-PROX_PRIMARY_SCH <- ggplot(data = condo_resale.sf, 
-                           aes(x = `PROX_PRIMARY_SCH`)) +
-  geom_histogram(bins = 20, 
-                 color = "black", 
-                 fill = "light blue")
-
-PROX_TOP_PRIMARY_SCH <- ggplot(data = condo_resale.sf, 
-                               aes(x = `PROX_TOP_PRIMARY_SCH`)) +
-  geom_histogram(bins = 20, 
-                 color = "black", 
-                 fill = "light blue")
+mapex <- st_bbox(hexagons)
 ```
 
 ```{r}
-ggarrange(AREA_SQM, AGE, PROX_CBD, PROX_CHILDCARE, 
-          PROX_ELDERLYCARE, PROX_URA_GROWTH_AREA,
-          PROX_HAWKER_MARKET, PROX_KINDERGARTEN, PROX_MRT,
-          PROX_PARK, PROX_PRIMARY_SCH, PROX_TOP_PRIMARY_SCH,  
-          ncol = 3, nrow = 4)
-```
-
-Putting all the predictors side by side makes it easy to spot which ones are skewed. Most of the distance variables bunch up near zero with a long tail, which fits the idea that most condos sit close to an MRT, a bus stop or a childcare centre, and only a few are far from everything.
-
-### Drawing Statistical Point Map
-
-```{r}
-tmap_mode("view")
-
-tm_shape(mpsz_svy21) +
-  tm_polygons() +
-tm_shape(condo_resale.sf) +  
-  tm_dots(fill = "SELLING_PRICE",
-          fill_alpha = 0.6,
-          size = 0.5,
-          fill.scale = tm_scale_intervals(
-            style = "quantile")) +
-  tm_view(set_zoom_limits = c(11,14))
-
-tmap_mode("plot")
-```
-
-Worth looking at where the priciest points sit before we model anything. If price clearly varies by area, one single regression line for the whole island is probably not going to be enough.
-
-### Extra: Median Resale Price by Planning Area
-
-```{r}
-condo_pln <- condo_resale.sf %>%
-  st_join(mpsz_svy21 %>% select(PLN_AREA_N)) %>%
-  st_drop_geometry() %>%
-  filter(!is.na(PLN_AREA_N)) %>%
-  group_by(PLN_AREA_N) %>%
-  summarise(median_price = median(SELLING_PRICE),
-            n_units = n())
-```
-
-```{r}
-condo_pln %>%
-  arrange(desc(median_price)) %>%
-  head(10)
-```
-
-```{r}
-mpsz_price <- mpsz_svy21 %>%
-  group_by(PLN_AREA_N) %>%
-  summarise() %>%
-  left_join(condo_pln, by = "PLN_AREA_N")
-```
-
-```{r}
-tm_shape(mpsz_price) +
-  tm_polygons(fill = "median_price",
+#| fig-width: 10
+#| fig-height: 7
+tm_shape(hexagon_Hansen,
+         bbox = mapex) + 
+  tm_polygons(fill = "accHansen", 
               fill.scale = tm_scale_intervals(
                 style = "quantile",
-                n = 5,
-                values = "brewer.blues"),
+                n = 10,
+                values = "brewer.blues")) +
+tm_shape(eldercare) +
+  tm_dots(size = 0.3,
+          fill = "red",
+          col = "black") +
+  tm_title("Accessibility to eldercare: Hansen method") +
+  tm_layout(frame = TRUE) +
+  tm_compass(type = "8star", size = 2) +
+  tm_scalebar() +
+  tm_grid(alpha = 0.2)
+```
+
+Darker hexagons have better access. The darkest areas should sit near clusters of red dots, with lighter areas where the nearest centre is far away.
+
+### How Much Does the Distance Decay Matter?
+
+```{r}
+hansen_power <- map_dfr(c(0.5, 1, 2), function(p) {
+  tibble(power = factor(p),
+         accHansen = as.numeric(ac(hexagons$demand,
+                                   eldercare$capacity,
+                                   distmat_km,
+                                   power = p,
+                                   family = "Hansen")))
+})
+```
+
+```{r}
+ggplot(data = hansen_power, 
+       aes(x = log(accHansen), fill = power)) +
+  geom_density(alpha = 0.4) +
+  labs(x = "log(Hansen accessibility)",
+       y = "Density",
+       fill = "Power")
+```
+
+```{r}
+hansen_power %>%
+  group_by(power) %>%
+  summarise(median = median(accHansen),
+            max = max(accHansen))
+```
+
+The writeup uses a power of 2 in one place and 0.5 in another, so it is worth seeing what that choice does. A higher power should make far away centres count for much less, while a lower power lets distant centres still contribute. The density plot and the small table compare 0.5, 1 and 2 side by side.
+
+### Statistical Graphic Visualisation
+
+```{r}
+hexagon_Hansen <- st_join(hexagon_Hansen, mpsz, 
+                          join = st_intersects)
+```
+
+```{r}
+ggplot(data = hexagon_Hansen, 
+       aes(y = log(accHansen), 
+           x = REGION_N)) +
+  geom_boxplot() +
+  geom_point(stat = "summary", 
+             fun = "mean", 
+             colour = "red", 
+             size = 2)
+```
+
+The hexagon table does not know which planning region each hexagon sits in, so it is joined to the subzone boundary first. The boxplot then compares the scores across regions, with a red dot marking each region's average. The log is used so a few very large values do not squash the rest of the plot.
+
+### Is the Difference Between Regions Real?
+
+```{r}
+hansen_region <- hexagon_Hansen %>%
+  st_drop_geometry() %>%
+  filter(!is.na(REGION_N)) %>%
+  mutate(log_accHansen = log(accHansen))
+```
+
+```{r}
+#| fig-width: 10
+#| fig-height: 6
+ggbetweenstats(data = hansen_region,
+               x = REGION_N,
+               y = log_accHansen,
+               type = "nonparametric",
+               xlab = "Planning region",
+               ylab = "log(Hansen accessibility)")
+```
+
+A boxplot shows differences but cannot say whether they are bigger than what chance alone would give. ggstatsplot was loaded at the start but the writeup never uses it, so this puts it to work. ggbetweenstats runs a Kruskal Wallis test, which does not assume the scores follow a normal distribution, and then compares the regions in pairs.
+
+## Modelling and Visualising Accessibility Using KD2SFCA Method
+
+### Computing KD2SFCA's Accessibility
+
+```{r}
+acc_KD2SFCA <- data.frame(ac(hexagons$demand,
+                             eldercare$capacity,
+                             distmat_km, 
+                             d0 = 5,
+                             power = 2, 
+                             family = "KD2SFCA"))
+
+colnames(acc_KD2SFCA) <- "accKD2SFCA"
+acc_KD2SFCA <- as_tibble(acc_KD2SFCA)
+hexagon_KD2SFCA <- bind_cols(hexagons, acc_KD2SFCA)
+```
+
+KD2SFCA is a more careful method than Hansen. It only counts eldercare centres within a set distance of each hexagon (d0 = 5 km here), and it also takes into account how many other hexagons are competing for the same centre. A centre that serves a huge crowd contributes less to each person than one that serves only a few.
+
+### Visualising KD2SFCA's Accessibility
+
+```{r}
+#| fig-width: 10
+#| fig-height: 7
+tm_shape(hexagon_KD2SFCA,
+         bbox = mapex) + 
+  tm_polygons(fill = "accKD2SFCA", 
+              fill.scale = tm_scale_intervals(
+                style = "quantile",
+                n = 10,
+                values = "brewer.blues")) +
+tm_shape(eldercare) +
+  tm_dots(size = 0.3,
+          fill = "red",
+          col = "black") +
+  tm_title("Accessibility to eldercare: KD2SFCA method") +
+  tm_layout(frame = TRUE) +
+  tm_compass(type = "8star", size = 2) +
+  tm_scalebar() +
+  tm_grid(alpha = 0.2)
+```
+
+Same map as before but with the KD2SFCA scores, so it is worth comparing it with the Hansen map to see which areas change colour.
+
+### Extra: Where Is Access Lowest?
+
+```{r}
+hexagon_KD2SFCA <- hexagon_KD2SFCA %>%
+  mutate(low_access = factor(
+    accKD2SFCA <= quantile(accKD2SFCA, 0.1, na.rm = TRUE),
+    levels = c(FALSE, TRUE),
+    labels = c("Other", "Lowest 10%")))
+```
+
+```{r}
+#| fig-width: 10
+#| fig-height: 7
+tm_shape(hexagon_KD2SFCA,
+         bbox = mapex) + 
+  tm_polygons(fill = "low_access",
+              fill.scale = tm_scale_categorical(
+                values = c("grey90", "red")),
               fill.legend = tm_legend(
-                title = "Median resale price")) +
-  tm_borders() +
-  tm_title("Median condo resale price by planning area")
+                title = "KD2SFCA accessibility")) +
+tm_shape(eldercare) +
+  tm_dots(size = 0.2,
+          fill = "black") +
+  tm_title("Hexagons with the lowest 10% accessibility (KD2SFCA)") +
+  tm_layout(frame = TRUE)
 ```
 
-The point map is busy, so here the prices are rolled up to planning area level and the median is mapped instead. It is easier to read as a quick overview. The number of units per area is kept in the table above, in case some areas only have a handful of sales and their median should be taken with a pinch of salt.
+A map with ten shades is good for the overall picture, but a planner mostly wants to know where the problem spots are. This one shades only the worst 10% of hexagons in red and leaves everything else grey, with the eldercare centres as black dots, so under served areas stand out straight away.
 
-## Hedonic Pricing Modelling in R
-
-### Simple Linear Regression Method
+### How Much Does the 5 km Cut Off Matter?
 
 ```{r}
-condo.slr <- lm(formula = SELLING_PRICE ~ AREA_SQM, 
-                data = condo_resale.sf)
-```
-
-```{r}
-summary(condo.slr)
-```
-
-```{r}
-ggplot(data = condo_resale.sf,  
-       aes(x = `AREA_SQM`, y = `SELLING_PRICE`)) +
-  geom_point() +
-  geom_smooth(method = lm)
-```
-
-The simple model, price against floor area only, explains about 45% of the variation, and floor area is clearly significant. It makes a useful baseline, but it ignores everything else about a condo, like its age and where it is. The scatterplot also shows a few very expensive units sitting well above the line, and those outliers pull the fit around.
-
-### Multiple Linear Regression Method
-
-#### Visualising the Relationships of the Independent Variables
-
-```{r}
-corrplot(cor(condo_resale[, 5:23]), 
-         diag = FALSE, 
-         order = "AOE",
-         tl.pos = "td", 
-         tl.cex = 0.5, 
-         method = "number", 
-         type = "upper")
-```
-
-Freehold and 99 year leasehold are almost mirror images of each other, which makes sense because a unit is one or the other. Keeping both would cause multicollinearity, so only freehold goes into the model.
-
-#### Building a Hedonic Pricing Model Using Multiple Linear Regression Method
-
-```{r}
-condo.mlr <- lm(
-  formula = SELLING_PRICE ~ AREA_SQM + AGE  + 
-    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
-    PROX_URA_GROWTH_AREA + PROX_HAWKER_MARKET   +
-    PROX_KINDERGARTEN   + PROX_MRT  + PROX_PARK +
-    PROX_PRIMARY_SCH + PROX_TOP_PRIMARY_SCH +
-    PROX_SHOPPING_MALL  + PROX_SUPERMARKET + 
-    PROX_BUS_STOP   + NO_Of_UNITS + 
-    FAMILY_FRIENDLY + FREEHOLD, 
-  data = condo_resale.sf)
+kd2sfca_d0 <- map_dfr(c(2, 5, 10), function(d) {
+  tibble(d0 = factor(d),
+         accKD2SFCA = as.numeric(ac(hexagons$demand,
+                                    eldercare$capacity,
+                                    distmat_km,
+                                    d0 = d,
+                                    power = 2,
+                                    family = "KD2SFCA")))
+})
 ```
 
 ```{r}
-summary(condo.mlr)
-```
-
-Not every predictor pulls its weight. A few of them, like distance to hawker markets, top primary schools and supermarkets, have large p values, which means there is no evidence they matter once the other variables are already in the model.
-
-#### Revising the Model
-
-```{r}
-condo.mlr1 <- lm(
-  formula = SELLING_PRICE ~ AREA_SQM + AGE + 
-    PROX_CBD + PROX_CHILDCARE + PROX_MRT +
-    PROX_ELDERLYCARE    + PROX_URA_GROWTH_AREA +
-    PROX_PARK   + PROX_PRIMARY_SCH + 
-    PROX_SHOPPING_MALL  + PROX_BUS_STOP + 
-    NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD,
-  data = condo_resale.sf)
+kd2sfca_d0 %>%
+  group_by(d0) %>%
+  summarise(median = median(accKD2SFCA, na.rm = TRUE),
+            share_zero = mean(accKD2SFCA == 0, na.rm = TRUE))
 ```
 
 ```{r}
-summary(condo.mlr1)
+ggplot(data = kd2sfca_d0, 
+       aes(x = d0, y = accKD2SFCA)) +
+  geom_boxplot() +
+  labs(x = "Catchment distance d0 (km)",
+       y = "KD2SFCA accessibility")
 ```
 
-After dropping the insignificant variables, every remaining predictor is significant at the 95% level. Adjusted R squared barely moves (0.6474 before, 0.6472 after), so we lose almost nothing by using the simpler model.
+The writeup picks 5 km for the catchment without saying why, so here the same model is run with 2, 5 and 10 km. A small catchment is stricter, so more hexagons should end up with no reachable centre at all, which is what the share_zero column shows. A large catchment is more forgiving, so the scores should look more alike across the island.
 
-### Extra: Stepwise Variable Selection with olsrr
-
-```{r}
-condo_resale_df <- condo_resale.sf %>%
-  st_drop_geometry()
-
-condo.mlr.df <- update(condo.mlr, data = condo_resale_df)
-```
+### Statistical Graphic Visualisation
 
 ```{r}
-ols_step_both_p(condo.mlr.df)
-```
-
-The model above was trimmed by hand. As a cross check, olsrr can do stepwise selection on the full model, so we can compare which variables it keeps against the ones removed manually. olsrr was loaded at the start but the writeup never uses it, so this puts it to work. It runs on a copy of the data without the geometry column so the spatial column does not get in the way.
-
-#### Preparing Publication Quality Table: gtsummary Method
-
-```{r}
-tbl_regression(condo.mlr1, intercept = TRUE)
+hexagon_KD2SFCA <- st_join(hexagon_KD2SFCA, mpsz, 
+                           join = st_intersects)
 ```
 
 ```{r}
-tbl_regression(condo.mlr1, 
-               intercept = TRUE) %>% 
-  add_glance_source_note(
-    label = list(sigma ~ "\U03C3"),
-    include = c(r.squared, adj.r.squared, 
-                AIC, statistic,
-                p.value, sigma))
+ggplot(data = hexagon_KD2SFCA, 
+       aes(y = accKD2SFCA, 
+           x = REGION_N)) +
+  geom_boxplot() +
+  geom_point(stat = "summary", 
+             fun = "mean", 
+             colour = "red", 
+             size = 2)
 ```
 
-gtsummary turns the regression output into a clean table that could go straight into a report. Adding the model statistics underneath (R squared, AIC, sigma) saves repeating them in the text.
+Same idea as the Hansen boxplot, with planning regions along the bottom and accessibility up the side. This time the raw scores are plotted without a log, so the differences between regions show on their original scale.
 
-#### Regression Diagnostics
+## Modelling and Visualising Accessibility Using Spatial Accessibility Measure (SAM) Method
 
-##### Multicollinearity Test
+### Computing SAM Accessibility
 
 ```{r}
-check_collinearity(condo.mlr1)
+acc_SAM <- data.frame(ac(hexagons$demand,
+                         eldercare$capacity,
+                         distmat_km, 
+                         d0 = 5,
+                         power = 2, 
+                         family = "SAM"))
+
+colnames(acc_SAM) <- "accSAM"
+acc_SAM <- as_tibble(acc_SAM)
+hexagon_SAM <- bind_cols(hexagons, acc_SAM)
 ```
 
+SAM is the third method. It is run with the same 5 km catchment and power of 2 as KD2SFCA, so any difference between the two maps comes from the method and not from the settings.
+
+### Visualising SAM's Accessibility
+
 ```{r}
-mlr.vif <- check_collinearity(condo.mlr1)
-plot(mlr.vif)
+#| fig-width: 10
+#| fig-height: 7
+tm_shape(hexagon_SAM,
+         bbox = mapex) + 
+  tm_polygons(fill = "accSAM", 
+              fill.scale = tm_scale_intervals(
+                style = "quantile",
+                n = 10,
+                values = "brewer.blues")) +
+tm_shape(eldercare) +
+  tm_dots(size = 0.3,
+          fill = "red",
+          col = "black") +
+  tm_title("Accessibility to eldercare: SAM method") +
+  tm_layout(frame = TRUE) +
+  tm_compass(type = "8star", size = 2) +
+  tm_scalebar() +
+  tm_grid(alpha = 0.2)
 ```
 
-All the VIF values are well under 10, so multicollinearity is not a problem in the revised model.
-
-##### Test for Non-Linearity
+### Statistical Graphic Visualisation
 
 ```{r}
-check_model(condo.mlr1,
-            check = "linearity")
-```
-
-The residuals scatter around the zero line without an obvious curve, so assuming a linear relationship is reasonable.
-
-##### Test for Normality Assumption
-
-```{r}
-check_normality(condo.mlr1)
-```
-
-```{r}
-plot(check_normality(condo.mlr1), 
-     type = "qq")
-```
-
-```{r}
-check_model(condo.mlr1,
-            check = "normality")
-```
-
-The formal test rejects normality, but with over 1,400 observations that test almost always rejects. The Q-Q plot and the residual histogram look much closer to normal, so this is more of a mild concern than a deal breaker.
-
-### Extra: Does a Log Price Model Fix the Normality Problem?
-
-```{r}
-condo.mlr.log <- lm(
-  formula = LOG_SELLING_PRICE ~ AREA_SQM + AGE + 
-    PROX_CBD + PROX_CHILDCARE + PROX_MRT +
-    PROX_ELDERLYCARE    + PROX_URA_GROWTH_AREA +
-    PROX_PARK   + PROX_PRIMARY_SCH + 
-    PROX_SHOPPING_MALL  + PROX_BUS_STOP + 
-    NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD,
-  data = condo_resale.sf)
+hexagon_SAM <- st_join(hexagon_SAM, mpsz, 
+                       join = st_intersects)
 ```
 
 ```{r}
-check_normality(condo.mlr.log)
+ggplot(data = hexagon_SAM, 
+       aes(y = accSAM, 
+           x = REGION_N)) +
+  geom_boxplot() +
+  geom_point(stat = "summary", 
+             fun = "mean", 
+             colour = "red", 
+             size = 2)
+```
+
+The last boxplot completes the set, so we now have maps and region comparisons for all three methods.
+
+### Do the Three Methods Agree?
+
+```{r}
+acc_all <- bind_cols(acc_Hansen, acc_KD2SFCA, acc_SAM)
 ```
 
 ```{r}
-plot(check_normality(condo.mlr.log), 
-     type = "qq")
-```
-
-Since price was log transformed earlier, the same model is refitted here with log price and run through the same normality checks. Comparing R squared between the two models would not be fair because they predict different things, so the only thing to compare is how the residuals look.
-
-#### Testing for Spatial Autocorrelation
-
-```{r}
-mlr.output <- as.data.frame(condo.mlr1$residuals)
+cor(acc_all, 
+    method = "spearman", 
+    use = "pairwise.complete.obs")
 ```
 
 ```{r}
-condo_resale.sf <- cbind(condo_resale.sf, 
-                        condo.mlr1$residuals) %>%
-  rename(`MLR_RES` = `condo.mlr1.residuals`)
+ggplot(data = acc_all, 
+       aes(x = accKD2SFCA, y = accSAM)) +
+  geom_point(alpha = 0.3) +
+  labs(x = "KD2SFCA accessibility",
+       y = "SAM accessibility")
 ```
 
-```{r}
-tmap_mode("view")
-
-tm_shape(mpsz_svy21) +
-  tm_polygons(fill_alpha = 0.4) +
-tm_shape(condo_resale.sf) +  
-  tm_dots(
-    fill = "MLR_RES",
-    size = 0.7,
-    col = "black",
-    fill.scale = tm_scale(
-      n = 10,
-      values = rev(
-        brewer.pal(11, "RdBu")),
-      style = "quantile",
-      midpoint = NA),
-    fill.legend = tm_legend(title = "Residuals")
-  ) + 
-  tm_title("LM Residuals (Quantile Classification)") +
-  tm_layout(legend.outside = TRUE) +
-  tm_view(set_zoom_limits = c(11,14))
-
-tmap_mode("plot")
-```
-
-```{r}
-condo_resale.sf <- condo_resale.sf %>% 
-  mutate(
-    nb = st_dist_band(
-      st_geometry(geometry), 
-                 upper = 1500),
-    wt = st_weights(
-      nb, style = "W"),
-    .before = 1) 
-```
-
-```{r}
-set.seed(1234)
-global_moran_perm(
-  condo_resale.sf$MLR_RES, 
-  nb = condo_resale.sf$nb, 
-  wt = condo_resale.sf$wt,
-  alternative = "two.sided", 
-  nsim = 499)
-```
-
-The residual map is not random, the over and under predictions sit in patches. Moran's I of about 0.14 with a tiny p value confirms the residuals are clustered, which means the global model is missing something spatial. That is the case for moving to GWR.
-
-## Building Hedonic Pricing Models Using GWmodel
-
-### Building Fixed Bandwidth GWR Model
-
-#### Computing Fixed Bandwidth
-
-```{r}
-bw.fixed <- bw.gwr(
-  formula = SELLING_PRICE ~ AREA_SQM + AGE  + 
-    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE    +
-    PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK + 
-    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL   + 
-    PROX_BUS_STOP   + NO_Of_UNITS + FAMILY_FRIENDLY + 
-    FREEHOLD, 
-  data = condo_resale.sf, 
-  approach = "CV", 
-  kernel = "gaussian", 
-  adaptive = FALSE, 
-  longlat = FALSE)
-```
-
-```{r}
-bw.fixed
-```
-
-The bandwidth comes out in metres because the data is in SVY21, a projected system where coordinates are measured in metres. If the data had stayed in WGS84 degrees, the bandwidth would have been in degrees or kilometres instead.
-
-#### GWModel Method: Fixed Bandwidth
-
-```{r}
-gwr.fixed <- gwr.basic(
-  formula = SELLING_PRICE ~ AREA_SQM + AGE  + 
-    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE    +
-    PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
-    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL   + 
-    PROX_BUS_STOP   + NO_Of_UNITS + FAMILY_FRIENDLY + 
-    FREEHOLD, 
-  data = condo_resale.sf, 
-  bw = bw.fixed, 
-  kernel = 'gaussian', 
-  longlat = FALSE)
-```
-
-```{r}
-gwr.fixed
-```
-
-Compared with the global regression, the fixed bandwidth GWR lowers the AICc from about 42,967 to about 42,264, and R squared jumps from 0.65 to 0.89. Some of that gain is probably overfitting, since the bandwidth is only about 971 metres and the model uses over 400 effective parameters. The coefficient summary also has a few extreme values, which hints that the local models become unstable in places with few nearby sales.
-
-### Building Adaptive Bandwidth GWR Model
-
-#### Computing the Adaptive Bandwidth
-
-```{r}
-bw.adaptive <- bw.gwr(
-  formula = SELLING_PRICE ~ AREA_SQM + AGE  + 
-    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE    +
-    PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
-    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL   + 
-    PROX_BUS_STOP   + NO_Of_UNITS + 
-    FAMILY_FRIENDLY + FREEHOLD, 
-  data = condo_resale.sf, 
-  approach = "CV", 
-  kernel = "gaussian", 
-  adaptive = TRUE, 
-  longlat = FALSE)
-```
-
-```{r}
-bw.adaptive
-```
-
-#### Constructing the Adaptive Bandwidth GWR Model
-
-```{r}
-gwr.adaptive <- gwr.basic(
-  formula = SELLING_PRICE ~ AREA_SQM + AGE + 
-    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
-    PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
-    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL + PROX_BUS_STOP +
-    NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD,
-  data = condo_resale.sf, 
-  bw = bw.adaptive, 
-  kernel = 'gaussian', 
-  adaptive = TRUE, 
-  longlat = FALSE)
-```
-
-```{r}
-gwr.adaptive
-```
-
-The adaptive bandwidth uses the 30 nearest condos instead of a fixed distance. Dense areas end up with small neighbourhoods and sparse areas with larger ones, so every local regression has a similar amount of data to work with. Its AICc (about 41,982) beats the fixed bandwidth model (about 42,264), so adaptive is the better calibration here.
-
-### Extra: Choosing the Bandwidth by AICc Instead of CV
-
-```{r}
-gwr_formula <- SELLING_PRICE ~ AREA_SQM + AGE + 
-  PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
-  PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
-  PROX_PRIMARY_SCH + PROX_SHOPPING_MALL + PROX_BUS_STOP +
-  NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD
-
-bw.adaptive.aicc <- bw.gwr(
-  formula = gwr_formula, 
-  data = condo_resale.sf, 
-  approach = "AICc", 
-  kernel = "gaussian", 
-  adaptive = TRUE, 
-  longlat = FALSE)
-```
-
-```{r}
-gwr.adaptive.aicc <- gwr.basic(
-  formula = gwr_formula,
-  data = condo_resale.sf, 
-  bw = bw.adaptive.aicc, 
-  kernel = 'gaussian', 
-  adaptive = TRUE, 
-  longlat = FALSE)
-```
-
-```{r}
-tibble(
-  model = c("Fixed bandwidth (CV)", 
-            "Adaptive bandwidth (CV)", 
-            "Adaptive bandwidth (AICc)"),
-  bandwidth = c(bw.fixed, bw.adaptive, bw.adaptive.aicc),
-  AICc = c(gwr.fixed$GW.diagnostic$AICc,
-           gwr.adaptive$GW.diagnostic$AICc,
-           gwr.adaptive.aicc$GW.diagnostic$AICc)
-)
-```
-
-The writeup mentions two ways to pick the bandwidth, cross validation and AICc, but only runs CV. This is the AICc version, with a small table putting all three GWR models side by side. The fixed bandwidth is in metres while the adaptive ones are counts of nearest neighbours, so only compare the AICc column across rows, not the bandwidth column.
-
-### Visualising GWR Output
-
-#### Converting SDF into sf data.frame
-
-```{r}
-condo_resale.sf.adaptive <- gwr.adaptive$SDF %>%
-  st_as_sf() %>%
-  st_transform(crs = 3414)
-```
-
-```{r}
-glimpse(condo_resale.sf.adaptive)
-```
-
-```{r}
-summary(gwr.adaptive$SDF$yhat)
-```
-
-Every condo now has its own set of coefficients, standard errors, t values, a predicted price and a local R squared. That is the whole point of GWR: one regression per location instead of one for everybody.
-
-### Extra: Did GWR Remove the Spatial Autocorrelation in the Residuals?
-
-```{r}
-set.seed(1234)
-global_moran_perm(
-  condo_resale.sf.adaptive$residual, 
-  nb = condo_resale.sf$nb, 
-  wt = condo_resale.sf$wt,
-  alternative = "two.sided", 
-  nsim = 499)
-```
-
-The global model's residuals were clearly clustered (Moran's I of about 0.14). The fair test of whether GWR did a better job is to run the same Moran's I test on the GWR residuals, using the same distance weights, and compare the two statistics.
-
-#### Visualising Local R2
-
-```{r}
-tmap_mode("view")
-
-tm_shape(mpsz_svy21) +
-  tm_polygons(fill_alpha = 0.1) +
-tm_shape(condo_resale.sf.adaptive) +  
-  tm_dots(fill = "Local_R2",
-          fill.scale = tm_scale_intervals(
-            style = "quantile",
-            n = 5,
-            values = "brewer.blues"),
-          fill.legend = tm_legend(title = "Local R2"),
-          col = "gray60") +
-  tm_view(set_zoom_limits = c(11,14))
-
-tmap_mode("plot")
-```
-
-Local R squared shows where the local model fits well and where it fits poorly. Pockets with low values hint that something important is missing from the model in that area.
-
-#### Visualising Coefficient Estimates
-
-```{r}
-tmap_mode("view")
-
-AREA_SQM_SE <- tm_shape(mpsz_svy21) +
-  tm_polygons(fill_alpha = 0.1) +
-tm_shape(condo_resale.sf.adaptive) +  
-  tm_dots(fill = "AREA_SQM_SE",
-          fill.scale = tm_scale_intervals(
-            style = "quantile",
-            n = 5,
-            values = "brewer.blues"),
-          fill.legend = tm_legend(title = "AREA_SQM_SE"),
-          col = "gray60") +
-  tm_view(set_zoom_limits = c(11,14))
-
-AREA_SQM_TV <- tm_shape(mpsz_svy21) +
-  tm_polygons(fill_alpha = 0.1) +
-tm_shape(condo_resale.sf.adaptive) +  
-  tm_dots(fill = "AREA_SQM_TV",
-          fill.scale = tm_scale_intervals(
-            style = "quantile",
-            n = 5,
-            values = "brewer.blues"),
-          fill.legend = tm_legend(title = "AREA_SQM_TV"),
-          col = "gray60") +
-  tm_view(set_zoom_limits = c(11,14))
-
-tmap_arrange(AREA_SQM_SE, AREA_SQM_TV, 
-             asp = 1, ncol = 2,
-             sync = TRUE)
-
-tmap_mode("plot")
-```
-
-Standard errors and t values tell us how much to trust each local coefficient. A large standard error compared with the coefficient means the estimate is shaky, which usually points to local collinearity or too few neighbours.
-
-### Extra: Where Does Distance to the MRT Matter Most?
-
-```{r}
-tm_shape(mpsz_svy21) +
-  tm_polygons(fill_alpha = 0.1) +
-tm_shape(condo_resale.sf.adaptive) +
-  tm_dots(fill = "PROX_MRT",
-          fill.scale = tm_scale_intervals(
-            style = "quantile",
-            n = 5,
-            values = "brewer.rd_bu"),
-          fill.legend = tm_legend(title = "Local coefficient"),
-          size = 0.4) +
-  tm_title("Local coefficient of PROX_MRT (adaptive GWR)")
-```
-
-The writeup only maps the floor area coefficient, so here is the local coefficient for distance to the nearest MRT as well. A negative value means the price drops the further a condo is from the MRT, and the map shows where that effect is strongest and where it fades or even turns positive. This is something the global regression cannot show, since it gives one MRT coefficient for the whole island.
+After three methods, the obvious question is whether they tell the same story. The scores are put side by side using the original score tables and not the hexagon tables, because the region join repeats hexagons that touch more than one subzone, so those rows would no longer line up. The Hansen column here is the power 0.5 version. A correlation close to 1 means the methods rank the hexagons in nearly the same order. Spearman is used because it only looks at rankings, so the very different scales of the three scores do not matter.
