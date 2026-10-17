@@ -119,137 +119,186 @@
     "text": "Geovisualisation and Geocommunication\n\nFinal KDE Maps (tmap)\nConverts the crisis-phase KDE output to a raster and plots it with tmap for a cleaner final map than the base-R version.\n\nkde_crisis_rast &lt;- rast(kde_phase[[\"Crisis (Aug-Sep)\"]])\ncrs(kde_crisis_rast) &lt;- \"EPSG:32749\"\n\ntm_shape(kde_crisis_rast) +\n  tm_raster(style = \"cont\", palette = \"viridis\", title = \"Fire Density\") +\n  tm_shape(ketapang_boundary) +\n  tm_borders(col = \"white\", lwd = 1) +\n  tm_layout(main.title = \"Fire Density - Crisis Phase (Aug-Sep 2026)\",\n            legend.outside = TRUE)\n\n\n\n\n\n\n\n\n\n\nG, F, K, L Function Plots (Final)\nRe-renders the second-order function plots using ggplot2 for consistent styling in the final report.\n\ng_df &lt;- as.data.frame(g_envelope)\n\nggplot(g_df, aes(x = r)) +\n  geom_ribbon(aes(ymin = lo, ymax = hi), fill = \"grey80\") +\n  geom_line(aes(y = obs), color = \"black\") +\n  geom_line(aes(y = theo), color = \"red\", linetype = \"dashed\") +\n  labs(title = \"G-function\", x = \"r\", y = \"G(r)\") +\n  theme_minimal()\n\n\n\n\n\n\n\n\n\nf_df &lt;- as.data.frame(f_envelope)\n\nggplot(f_df, aes(x = r)) +\n  geom_ribbon(aes(ymin = lo, ymax = hi), fill = \"grey80\") +\n  geom_line(aes(y = obs), color = \"black\") +\n  geom_line(aes(y = theo), color = \"red\", linetype = \"dashed\") +\n  labs(title = \"F-function\", x = \"r\", y = \"F(r)\") +\n  theme_minimal()\n\n\n\n\n\n\n\n\n\nk_df &lt;- as.data.frame(k_envelope)\n\nggplot(k_df, aes(x = r)) +\n  geom_ribbon(aes(ymin = lo, ymax = hi), fill = \"grey80\") +\n  geom_line(aes(y = obs), color = \"black\") +\n  geom_line(aes(y = theo), color = \"red\", linetype = \"dashed\") +\n  labs(title = \"K-function\", x = \"r\", y = \"K(r)\") +\n  theme_minimal()\n\n\n\n\n\n\n\n\n\nl_df &lt;- as.data.frame(l_envelope)\n\nggplot(l_df, aes(x = r)) +\n  geom_ribbon(aes(ymin = lo - r, ymax = hi - r), fill = \"grey80\") +\n  geom_line(aes(y = obs - r), color = \"black\") +\n  geom_line(aes(y = theo - r), color = \"red\", linetype = \"dashed\") +\n  labs(title = \"L-function (centred)\", x = \"r\", y = \"L(r) - r\") +\n  theme_minimal()"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html",
-    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html",
-    "title": "In-class_Ex06",
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html",
+    "title": "In-class_Ex07",
     "section": "",
-    "text": "pacman::p_load(sf, sfdep, tmap, \n               plotly, tidyverse, \n               Kendall)"
+    "text": "if (!requireNamespace(\"catchment\", quietly = TRUE)) {\n  remotes::install_github(\"uva-bi-sdad/catchment\")\n}\nlibrary(catchment)\n\n\npacman::p_load(sf, tidyverse, tmap, accessibility, catchment)"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#installing-and-loading-the-r-packages",
-    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#installing-and-loading-the-r-packages",
-    "title": "In-class_Ex06",
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#loading-r-package",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#loading-r-package",
+    "title": "In-class_Ex07",
     "section": "",
-    "text": "pacman::p_load(sf, sfdep, tmap, \n               plotly, tidyverse, \n               Kendall)"
+    "text": "if (!requireNamespace(\"catchment\", quietly = TRUE)) {\n  remotes::install_github(\"uva-bi-sdad/catchment\")\n}\nlibrary(catchment)\n\n\npacman::p_load(sf, tidyverse, tmap, accessibility, catchment)"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#import-shapefile-into-r-environment",
-    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#import-shapefile-into-r-environment",
-    "title": "In-class_Ex06",
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#importing-geospatial-data",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#importing-geospatial-data",
+    "title": "In-class_Ex07",
+    "section": "Importing Geospatial data",
+    "text": "Importing Geospatial data\n\nmpsz &lt;- st_read(dsn = \"data/geospatial\", \n                layer = \"MP14_SUBZONE_NO_SEA_PL\") %&gt;%\n  st_transform(crs = 3414)\n\nReading layer `MP14_SUBZONE_NO_SEA_PL' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex07\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 323 features and 15 fields\nGeometry type: MULTIPOLYGON\nDimension:     XY\nBounding box:  xmin: 2667.538 ymin: 15748.72 xmax: 56396.44 ymax: 50256.33\nProjected CRS: SVY21\n\n\n\nhexagons &lt;- st_read(dsn = \"data/geospatial\", \n                    layer = \"hexagons\") %&gt;%\n  st_transform(crs = 3414)\n\nReading layer `hexagons' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex07\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 3125 features and 6 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 2667.538 ymin: 21506.33 xmax: 50010.26 ymax: 50256.33\nProjected CRS: SVY21 / Singapore TM\n\n\n\neldercare &lt;- st_read(dsn = \"data/geospatial\", \n                     layer = \"ELDERCARE\") %&gt;%\n  st_transform(crs = 3414)\n\nReading layer `ELDERCARE' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex07\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 120 features and 19 fields\nGeometry type: POINT\nDimension:     XY\nBounding box:  xmin: 14481.92 ymin: 28218.43 xmax: 41665.14 ymax: 46804.9\nProjected CRS: SVY21 / Singapore TM\n\n\n\nODMatrix &lt;- read_csv(\"data/aspatial/OD_Matrix.csv\", skip = 0)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#geospatial-preparation",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#geospatial-preparation",
+    "title": "In-class_Ex07",
+    "section": "Geospatial Preparation",
+    "text": "Geospatial Preparation\n\nhexagons &lt;- hexagons %&gt;%\n  select(fid) %&gt;%\n  mutate(demand = 100) %&gt;%\n  rename(id = fid)\n\n\neldercare &lt;- eldercare %&gt;%\n  select(fid) %&gt;%\n  mutate(capacity = 100)\n\n\nODMatrix_tidied &lt;- ODMatrix %&gt;%\n  select(origin_id, destination_id, total_cost) %&gt;%\n  rename(from_id = origin_id,\n         to_id = destination_id,\n         dist = total_cost)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#computing-minimum-travel-distance-to-nearest-oldercare",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#computing-minimum-travel-distance-to-nearest-oldercare",
+    "title": "In-class_Ex07",
+    "section": "Computing Minimum Travel Distance to nearest oldercare",
+    "text": "Computing Minimum Travel Distance to nearest oldercare\n\ndist2closest &lt;- cost_to_closest(\n  travel_matrix = ODMatrix_tidied,\n  land_use_data = hexagons,\n  opportunity = \"demand\",\n  travel_cost = \"dist\",\n  n = 1,\n  group_by = character(0),\n  active = TRUE,\n  fill_missing_ids = TRUE\n)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#joining-output",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#joining-output",
+    "title": "In-class_Ex07",
+    "section": "Joining output",
+    "text": "Joining output\n\nhex_acc &lt;- hexagons %&gt;%\n  left_join(dist2closest) %&gt;%\n  rename(dist2closest = dist)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-closest-distance",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-closest-distance",
+    "title": "In-class_Ex07",
+    "section": "Mapping closest distance",
+    "text": "Mapping closest distance\n\nmapex &lt;- st_bbox(hex_acc)\ntm_shape(hex_acc,\n         bbox = mapex) + \n  tm_polygons(fill = \"dist2closest\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"Accessibility to the closest eldercare\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#converting-odmatrix-data-frame-in-a-matrix",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#converting-odmatrix-data-frame-in-a-matrix",
+    "title": "In-class_Ex07",
+    "section": "Converting ODMatrix data frame in a matrix",
+    "text": "Converting ODMatrix data frame in a matrix\n\ndistmat &lt;- ODMatrix %&gt;%\n  select(origin_id, destination_id, total_cost) %&gt;%\n  spread(destination_id, total_cost) %&gt;%\n  select(c(-c('origin_id')))\n\ndistmat_km &lt;- as.matrix(distmat/1000)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#two-step-floating-catchment-area",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#two-step-floating-catchment-area",
+    "title": "In-class_Ex07",
+    "section": "Two-Step Floating Catchment Area",
+    "text": "Two-Step Floating Catchment Area\n\ndf_2sfca &lt;- catchment_ratio(\n  consumers = hexagons$demand,\n  providers = eldercare$capacity,\n  cost = distmat_km,\n  max_cost = 5) %&gt;%\n  as.data.frame() %&gt;%\n  rename(\"2SFCA\" = \".\")"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-2sfca",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-2sfca",
+    "title": "In-class_Ex07",
+    "section": "Mapping 2SFCA",
+    "text": "Mapping 2SFCA\n\nhex_2SFCA &lt;- bind_cols(hexagons, df_2sfca) \ntm_shape(hex_2SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"2SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"2SFCA Accessibility measures\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#enhanced-2-step-floating-catchment",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#enhanced-2-step-floating-catchment",
+    "title": "In-class_Ex07",
+    "section": "Enhanced 2-Step Floating Catchment",
+    "text": "Enhanced 2-Step Floating Catchment\n\nstep_weights &lt;- list(c(5, .01), c(4, .05), c(3, .1), c(2, .4), c(1, 1))\ndf_e2sfca &lt;- catchment_ratio(\n  consumers = hexagons$demand,\n  providers = eldercare$capacity,\n  cost = distmat_km,\n  weight = step_weights) %&gt;%\n  as.data.frame() %&gt;%\n  rename(\"E2SFCA\" = \".\")"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-e2sfca",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-e2sfca",
+    "title": "In-class_Ex07",
+    "section": "Mapping E2SFCA",
+    "text": "Mapping E2SFCA\n\nhex_E2SFCA &lt;- bind_cols(hexagons, df_e2sfca) \ntm_shape(hex_E2SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"E2SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"E2SFCA Accessibility measures\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#kernel-density-guassian-2-step-floating-catchment-area",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#kernel-density-guassian-2-step-floating-catchment-area",
+    "title": "In-class_Ex07",
+    "section": "Kernel Density (Guassian) 2-Step Floating Catchment Area",
+    "text": "Kernel Density (Guassian) 2-Step Floating Catchment Area\n\ndf_kd2sfca &lt;- catchment_ratio(\n  consumers = hexagons$demand, \n  providers = eldercare$capacity,\n  cost = distmat_km,\n  weight = \"gaussian\") %&gt;%\n  as.data.frame() %&gt;%\n  rename(\"KD2SFCA\" = \".\")"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-kd2sfca",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-kd2sfca",
+    "title": "In-class_Ex07",
+    "section": "Mapping KD2SFCA",
+    "text": "Mapping KD2SFCA\n\nhex_KD2SFCA &lt;- bind_cols(hexagons, df_kd2sfca) \ntm_shape(hex_KD2SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"KD2SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"KDSFCA Accessibility measures\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#step-floating-catchment-area",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#step-floating-catchment-area",
+    "title": "In-class_Ex07",
+    "section": "3-Step Floating Catchment Area",
+    "text": "3-Step Floating Catchment Area\n\ndf_3sfca &lt;- catchment_ratio(\n  consumers = hexagons$demand, \n  providers = eldercare$capacity,\n  cost = distmat_km,\n  step_weights, \n  normalize_weight = TRUE) %&gt;%\n  as.data.frame() %&gt;%\n  rename(\"3SFCA\" = \".\")\n\n\nhex_3SFCA &lt;- bind_cols(hexagons, df_3sfca) \ntm_shape(hex_3SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"3SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"3SFCA Accessibility measures\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#modified-2-step-floating-catchment-area",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#modified-2-step-floating-catchment-area",
+    "title": "In-class_Ex07",
+    "section": "Modified 2-Step Floating Catchment Area",
+    "text": "Modified 2-Step Floating Catchment Area\n\ndf_m2sfca &lt;- catchment_ratio(\n  consumers = hexagons$demand, \n  providers = eldercare$capacity,\n  cost = distmat_km,\n  step_weights, \n  adjust_providers = function(w) w^2) %&gt;%\n  as.data.frame() %&gt;%\n  rename(\"M2SFCA\" = \".\")\n\n\nhex_M2SFCA &lt;- bind_cols(hexagons, df_m2sfca) \ntm_shape(hex_M2SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"M2SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"M2SFCA Accessibility measures\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html",
+    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html",
+    "title": "In-class_Ex05",
+    "section": "",
+    "text": "pacman::p_load(sf, sfdep, tmap, tidyverse)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#installing-and-loading-the-r-packages",
+    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#installing-and-loading-the-r-packages",
+    "title": "In-class_Ex05",
+    "section": "",
+    "text": "pacman::p_load(sf, sfdep, tmap, tidyverse)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#import-shapefile-into-r-environment",
+    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#import-shapefile-into-r-environment",
+    "title": "In-class_Ex05",
     "section": "Import Shapefile into R Environment",
-    "text": "Import Shapefile into R Environment\n\nhunan &lt;- st_read(dsn = \"data/geospatial\", \n                 layer = \"Hunan\")  %&gt;% \n  st_transform(crs = 32650)\n\nReading layer `Hunan' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex06\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 88 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 108.7831 ymin: 24.6342 xmax: 114.2544 ymax: 30.12812\nGeodetic CRS:  WGS 84"
+    "text": "Import Shapefile into R Environment\n\nhunan &lt;- st_read(dsn = \"data/geospatial\", \n                 layer = \"Hunan\")\n\nReading layer `Hunan' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex05\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 88 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 108.7831 ymin: 24.6342 xmax: 114.2544 ymax: 30.12812\nGeodetic CRS:  WGS 84"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#import-attribute-table",
-    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#import-attribute-table",
-    "title": "In-class_Ex06",
-    "section": "Import Attribute table",
-    "text": "Import Attribute table\n\nGDPPC &lt;- read_csv(\n  \"data/aspatial/Hunan_GDPPC.csv\")"
+    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#import-csv-file-into-r-environment",
+    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#import-csv-file-into-r-environment",
+    "title": "In-class_Ex05",
+    "section": "Import CSV File into R Environment",
+    "text": "Import CSV File into R Environment\n\nhunan2012 &lt;- read_csv(\"data/aspatial/Hunan_2012.csv\")"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#creating-time-series-cube",
-    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#creating-time-series-cube",
-    "title": "In-class_Ex06",
-    "section": "Creating Time Series Cube",
-    "text": "Creating Time Series Cube\n\nGDPPC_st &lt;- spacetime(GDPPC, hunan,\n                      .loc_col = \"County\",\n                      .time_col = \"Year\")\n\n\nis_spacetime_cube(GDPPC_st)\n\n[1] TRUE"
+    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#performing-relational-join",
+    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#performing-relational-join",
+    "title": "In-class_Ex05",
+    "section": "Performing Relational Join",
+    "text": "Performing Relational Join\n\nhunan_GDPPC &lt;- hunan %&gt;%\n  left_join(hunan2012) %&gt;%\n  select(1:4, 7, 15, 33)"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#computing-gi",
-    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#computing-gi",
-    "title": "In-class_Ex06",
-    "section": "Computing Gi*",
-    "text": "Computing Gi*\n\nDerive the spatial weights\n\nGDPPC_nb &lt;- GDPPC_st %&gt;%\n  activate(\"geometry\") %&gt;%\n  mutate(nb = include_self(\n    st_contiguity(geometry)),\n    wt = st_inverse_distance(nb, \n                             geometry, \n                             scale = 1,\n                             alpha = 1),\n    .before = 1) %&gt;%\n  set_nbs(\"nb\") %&gt;%\n  set_wts(\"wt\")"
+    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#global-measures-of-spatial-association",
+    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#global-measures-of-spatial-association",
+    "title": "In-class_Ex05",
+    "section": "Global Measures of Spatial Association",
+    "text": "Global Measures of Spatial Association\n\nStep 1: Deriving Queen’s contiguity weights: sfdep methods\n\nwm_q &lt;- hunan_GDPPC %&gt;%\n  mutate(nb = st_contiguity(geometry),\n         wt = st_weights(nb,\n                         style = \"W\"),\n         .before = 1)\n\n\n\nStep 2: Computing Global Moran’I\n\nmoranI &lt;- global_moran(wm_q$GDPPC,\n                       wm_q$nb,\n                       wm_q$wt)\nglimpse(moranI)\n\nList of 2\n $ I: num 0.301\n $ K: num 7.64\n\n\n##Performing Global Moran’I permutation test\n\nset.seed(!234) \n\nglobal_moran_perm (wm_q$GDPPC, \n                   wm_q$nb,\n                   wm_q$wt,\n                   nsim = 99)\n\n\n    Monte-Carlo simulation of Moran I\n\ndata:  x \nweights: listw  \nnumber of simulations + 1: 100 \n\nstatistic = 0.30075, observed rank = 100, p-value &lt; 2.2e-16\nalternative hypothesis: two.sided"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#computing-gi-1",
-    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#computing-gi-1",
-    "title": "In-class_Ex06",
-    "section": "Computing Gi*",
-    "text": "Computing Gi*\n\ngi_stars &lt;- GDPPC_nb %&gt;% \n  group_by(Year) %&gt;% \n  mutate(gi_star = local_gstar_perm(\n    GDPPC, nb, wt)) %&gt;% \n  tidyr::unnest(gi_star)"
+    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#computing-local-morans-i",
+    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#computing-local-morans-i",
+    "title": "In-class_Ex05",
+    "section": "Computing local Moran’s I",
+    "text": "Computing local Moran’s I\n\nlisa &lt;- wm_q %&gt;%\n  mutate(local_moran = local_moran(\n    GDPPC, nb, wt, nsim = 99),\n    .before = 1) %&gt;%\n  unnest(local_moran)"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#mann-kendall-test",
-    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#mann-kendall-test",
-    "title": "In-class_Ex06",
-    "section": "Mann-Kendall Test",
-    "text": "Mann-Kendall Test\n\nMann-Kendall Test on Gi\n\ncbg &lt;- gi_stars %&gt;% \n  ungroup() %&gt;% \n  filter(County == \"Changsha\") |&gt; \n  select(County, Year, gi_star)\n\n\nggplot(data = cbg, \n       aes(x = Year, \n           y = gi_star)) +\n  geom_line() +\n  theme_light()\n\n\n\n\n\n\n\n\n\n\nInteractive Mann-Kendall Plot\n\np &lt;- ggplot(data = cbg, \n       aes(x = Year, \n           y = gi_star)) +\n  geom_line() +\n  theme_light()\n\nggplotly(p)\n\n\n\n\n\n\n\nPrinting Mann-Kendall test report\n\ncbg %&gt;%\n  summarise(mk = list(\n    unclass(\n      Kendall::MannKendall(gi_star)))) %&gt;% \n  tidyr::unnest_wider(mk)\n\n# A tibble: 1 × 5\n    tau      sl     S     D  varS\n  &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;\n1 0.485 0.00742    66  136.  589.\n\n\n\n\nMann-Kendall test data.frame\n\nehsa &lt;- gi_stars %&gt;%\n  group_by(County) %&gt;%\n  summarise(mk = list(\n    unclass(\n      Kendall::MannKendall(gi_star)))) %&gt;%\n  tidyr::unnest_wider(mk)\nhead(ehsa)\n\n# A tibble: 6 × 6\n  County        tau        sl     S     D  varS\n  &lt;chr&gt;       &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;\n1 Anhua      0.191  0.303        26  136.  589.\n2 Anren     -0.294  0.108       -40  136.  589.\n3 Anxiang    0      1             0  136.  589.\n4 Baojing   -0.691  0.000128    -94  136.  589.\n5 Chaling   -0.0882 0.650       -12  136.  589.\n6 Changning -0.750  0.0000318  -102  136.  589.\n\n\n\nemerging &lt;- ehsa %&gt;% \n  arrange(sl, abs(tau)) %&gt;% \n  slice(1:10)\nhead(emerging)\n\n# A tibble: 6 × 6\n  County        tau         sl     S     D  varS\n  &lt;chr&gt;       &lt;dbl&gt;      &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;\n1 Shuangfeng  0.868 0.00000143   118  136.  589.\n2 Xiangtan    0.868 0.00000143   118  136.  589.\n3 Xiangxiang  0.868 0.00000143   118  136.  589.\n4 Chengbu    -0.824 0.00000482  -112  136.  589.\n5 Dongan     -0.824 0.00000482  -112  136.  589.\n6 Wugang     -0.809 0.00000712  -110  136.  589."
+    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#plotting-lisa-map",
+    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#plotting-lisa-map",
+    "title": "In-class_Ex05",
+    "section": "Plotting LISA map",
+    "text": "Plotting LISA map\n\nlisa_sig &lt;- lisa %&gt;%\n  filter(p_ii_sim &lt; 0.05)\ntmap_mode(\"plot\")\ntm_shape(lisa) + \n  tm_polygons() +\n  tm_borders(fill_alpha = 0.5) +\ntm_shape(lisa_sig) + \n  tm_polygons(fill = \"mean\", \n              fill.legend = tm_legend(\n                text.size = 1.15,\n                width = 6)) +\n  tm_borders(fill_alpha = 0.4) + \n  tm_layout(legend.title.size = 1.25)"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#performing-emerging-hotspot-analysis",
-    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#performing-emerging-hotspot-analysis",
-    "title": "In-class_Ex06",
-    "section": "Performing Emerging Hotspot Analysis",
-    "text": "Performing Emerging Hotspot Analysis\n\nehsa &lt;- emerging_hotspot_analysis(\n  x = GDPPC_st, \n  .var = \"GDPPC\", \n  k = 1, \n  nsim = 99\n)\n\n\nVisualising the distribution of EHSA classes\n\nggplot(data = ehsa,\n       aes(x = classification)) +\n  geom_bar()\n\n\n\n\n\n\n\n\n\n\nVisualizing EHSA\n\nhunan_ehsa &lt;- hunan %&gt;%\n  left_join(ehsa,\n            by = join_by(County == location))\n\n\nehsa_sig &lt;- hunan_ehsa  %&gt;%\n  filter(p_value &lt; 0.05)\ntmap_mode(\"plot\")\ntm_shape(hunan_ehsa) +\n  tm_polygons() +\n  tm_borders(fill_alpha = 0.5) +\ntm_shape(ehsa_sig) +\n  tm_fill(\"classification\") + \n  tm_borders(fill_alpha = 0.4)"
+    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#visualizing-p-value-of-local",
+    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#visualizing-p-value-of-local",
+    "title": "In-class_Ex05",
+    "section": "Visualizing p-value of local",
+    "text": "Visualizing p-value of local"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html",
-    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html",
-    "title": "In-class_Ex04",
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "GAA-Abinav-Test",
     "section": "",
-    "text": "pacman::p_load(sf, ggstatsplot, tmap, tidyverse, knitr, GWmodel)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#the-code",
-    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#the-code",
-    "title": "In-class_Ex04",
-    "section": "",
-    "text": "pacman::p_load(sf, ggstatsplot, tmap, tidyverse, knitr, GWmodel)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#preparing-the-data",
-    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#preparing-the-data",
-    "title": "In-class_Ex04",
-    "section": "Preparing the Data",
-    "text": "Preparing the Data\n\nImporting Hunan shapefile\n\nhunan_sf &lt;- st_read(dsn = \"data/geospatial\", layer = \"Hunan\")\n\nReading layer `Hunan' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex04\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 88 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 108.7831 ymin: 24.6342 xmax: 114.2544 ymax: 30.12812\nGeodetic CRS:  WGS 84\n\n\n\n\nimporting Hunan_2012 table\n\nhunan2012 &lt;- read_csv(\"data/aspatial/Hunan_2012.csv\")\n\n\n\nJoining Hunan and Hunan_2012\n\nhunan_sf &lt;- left_join(hunan_sf, hunan2012) %&gt;%\n  select(1:3, 7, 15, 16, 31, 32)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#mapping-gdppc",
-    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#mapping-gdppc",
-    "title": "In-class_Ex04",
-    "section": "Mapping GDPPC",
-    "text": "Mapping GDPPC"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#converting-to-spatialpolygondataframe",
-    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#converting-to-spatialpolygondataframe",
-    "title": "In-class_Ex04",
-    "section": "Converting to SpatialPolygonDataFrame",
-    "text": "Converting to SpatialPolygonDataFrame\n\nhunan_sp &lt;- hunan_sf %&gt;%\n  as_Spatial()"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geographically-weighted-summary-statistics-gsww",
-    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geographically-weighted-summary-statistics-gsww",
-    "title": "In-class_Ex04",
-    "section": "Geographically Weighted Summary Statistics (GSWW)",
-    "text": "Geographically Weighted Summary Statistics (GSWW)\n\nDetermine adaptive bandwidth\nCross-Validation\n\nbw_CV &lt;- bw.gwr(GDPPC ~ 1,\n                data = hunan_sp,\n                approach = \"CV\",\n                adaptive = TRUE,\n                kernel = \"bisquare\",\n                longlat = T) \n\nAdaptive bandwidth: 62 CV score: 15515442343 \nAdaptive bandwidth: 46 CV score: 14937956887 \nAdaptive bandwidth: 36 CV score: 14408561608 \nAdaptive bandwidth: 29 CV score: 14198527496 \nAdaptive bandwidth: 26 CV score: 13898800611 \nAdaptive bandwidth: 22 CV score: 13662299974 \nAdaptive bandwidth: 22 CV score: 13662299974 \n\n\n\nbw_CV\n\n[1] 22\n\n\nAICc\n\nbw_AIC &lt;- bw.gwr(GDPPC ~ 1,\n                data = hunan_sp,\n                approach = \"AICc\",\n                adaptive = TRUE,\n                kernel = \"bisquare\",\n                longlat = T) \n\nAdaptive bandwidth (number of nearest neighbours): 62 AICc value: 1923.156 \nAdaptive bandwidth (number of nearest neighbours): 46 AICc value: 1920.469 \nAdaptive bandwidth (number of nearest neighbours): 36 AICc value: 1917.324 \nAdaptive bandwidth (number of nearest neighbours): 29 AICc value: 1916.661 \nAdaptive bandwidth (number of nearest neighbours): 26 AICc value: 1914.897 \nAdaptive bandwidth (number of nearest neighbours): 22 AICc value: 1914.045 \nAdaptive bandwidth (number of nearest neighbours): 22 AICc value: 1914.045 \n\n\n\nbw_AIC\n\n[1] 22\n\n\n\n\nComputing geographically weighted summary statistics\nThe code chunk below computes geographically weighted summary statistics by using gwss() of GWmodel package. The analysis is performed using adaptive distance weighted. The distance is derived using AICc method and the kernel method used is bisquare.\n\ngw_stat &lt;- gwss(data = hunan_sp,\n                vars = \"GDPPC\",\n                bw = bw_AIC,\n                kernel = \"bisquare\",\n                adaptive = TRUE,\n                quantile = TRUE,\n                longlat = T) \n\n\n\nPreparing the output data\n\ngwstat_df &lt;- as.data.frame(gw_stat$SDF)\n\n\nhunan_gstat &lt;- cbind(hunan_sf, gwstat_df)\n\n\n\nVisualising geographically weighted summary statistics"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#gwss-with-fixed-bandwidth",
-    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#gwss-with-fixed-bandwidth",
-    "title": "In-class_Ex04",
-    "section": "GWSS with Fixed Bandwidth",
-    "text": "GWSS with Fixed Bandwidth\n\nDetermine fixed bandwidth\nCross Validation\n\nbw_CV &lt;- bw.gwr(GDPPC ~ 1, \n             data = hunan_sp,\n             approach = \"CV\",\n             adaptive = FALSE, \n             kernel = \"bisquare\", \n             longlat = T)\n\nFixed bandwidth: 357.4897 CV score: 16265191728 \nFixed bandwidth: 220.985 CV score: 14954930931 \nFixed bandwidth: 136.6204 CV score: 14134185837 \nFixed bandwidth: 84.48025 CV score: 13693362460 \nFixed bandwidth: 52.25585 CV score: Inf \nFixed bandwidth: 104.396 CV score: 13891052305 \nFixed bandwidth: 72.17162 CV score: 13577893677 \nFixed bandwidth: 64.56447 CV score: 14681160609 \nFixed bandwidth: 76.8731 CV score: 13444716890 \nFixed bandwidth: 79.77877 CV score: 13503296834 \nFixed bandwidth: 75.07729 CV score: 13452450771 \nFixed bandwidth: 77.98296 CV score: 13457916138 \nFixed bandwidth: 76.18716 CV score: 13442911302 \nFixed bandwidth: 75.76323 CV score: 13444600639 \nFixed bandwidth: 76.44916 CV score: 13442994078 \nFixed bandwidth: 76.02523 CV score: 13443285248 \nFixed bandwidth: 76.28724 CV score: 13442844774 \nFixed bandwidth: 76.34909 CV score: 13442864995 \nFixed bandwidth: 76.24901 CV score: 13442855596 \nFixed bandwidth: 76.31086 CV score: 13442847019 \nFixed bandwidth: 76.27264 CV score: 13442846793 \nFixed bandwidth: 76.29626 CV score: 13442844829 \nFixed bandwidth: 76.28166 CV score: 13442845238 \nFixed bandwidth: 76.29068 CV score: 13442844678 \nFixed bandwidth: 76.29281 CV score: 13442844691 \nFixed bandwidth: 76.28937 CV score: 13442844698 \nFixed bandwidth: 76.2915 CV score: 13442844676 \nFixed bandwidth: 76.292 CV score: 13442844679 \nFixed bandwidth: 76.29119 CV score: 13442844676 \nFixed bandwidth: 76.29099 CV score: 13442844676 \nFixed bandwidth: 76.29131 CV score: 13442844676 \nFixed bandwidth: 76.29138 CV score: 13442844676 \nFixed bandwidth: 76.29126 CV score: 13442844676 \nFixed bandwidth: 76.29123 CV score: 13442844676 \n\n\nAICc\n\nbw_AIC &lt;- bw.gwr(GDPPC ~ 1, \n             data = hunan_sp,\n             approach =\"AICc\",\n             adaptive = FALSE, \n             kernel = \"bisquare\", \n             longlat = T)\n\nFixed bandwidth: 357.4897 AICc value: 1927.631 \nFixed bandwidth: 220.985 AICc value: 1921.547 \nFixed bandwidth: 136.6204 AICc value: 1919.993 \nFixed bandwidth: 84.48025 AICc value: 1940.603 \nFixed bandwidth: 168.8448 AICc value: 1919.457 \nFixed bandwidth: 188.7606 AICc value: 1920.007 \nFixed bandwidth: 156.5362 AICc value: 1919.41 \nFixed bandwidth: 148.929 AICc value: 1919.527 \nFixed bandwidth: 161.2377 AICc value: 1919.392 \nFixed bandwidth: 164.1433 AICc value: 1919.403 \nFixed bandwidth: 159.4419 AICc value: 1919.393 \nFixed bandwidth: 162.3475 AICc value: 1919.394 \nFixed bandwidth: 160.5517 AICc value: 1919.391 \n\n\n\n\nComputing fixed bandwidth GWSS\n\ngwstat &lt;- gwss(data = hunan_sp,\n               vars = \"GDPPC\",\n               bw = bw_AIC,\n               kernel = \"bisquare\",\n               adaptive = FALSE,\n               quantile = TRUE,\n               longlat = T)\n\n\n\nPreparing the output data\n\ngwstat_df &lt;- as.data.frame(gwstat$SDF)\n\n\nhunan_gstat &lt;- cbind(hunan_sf, gwstat_df)\n\n\n\nVisualising fixed bandwidth geographically weighted mean\n\ntm_shape(hunan_gstat) +\n  tm_polygons(fill = \"GDPPC_LM\",\n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 5,\n                values = \"brewer.blues\"),\n              fill.legend = tm_legend(\n                title = \"local Mean\")) +\n  tm_borders(fill_alpha = 0.5) +\n  tm_title(\"Distribution of geographically wieghted mean\") + \n  tm_layout(legend.position = c(\"left\", \"bottom\"))"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geographically-weighted-correlation",
-    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geographically-weighted-correlation",
-    "title": "In-class_Ex04",
-    "section": "Geographically Weighted Correlation",
-    "text": "Geographically Weighted Correlation\n\nConventional Statistical Solution\n\nggscatterstats(\n  data = hunan2012, \n  x = Agri, \n  y = GDPPC,\n  xlab = \"Gross Agriculture Output\", \n  ylab = \"GDP per capita\", \n  label.var = County, \n  label.expression = Agri &gt; 10000 & GDPPC &gt; 50000, \n  point.label.args = list(alpha = 0.7, size = 4, color = \"grey50\"),\n  xfill = \"#CC79A7\", \n  yfill = \"#009E73\", \n  title = \"Relationship between GDP PC and Gross Agriculture Output\")\n\n\n\n\n\n\n\n\n\n\nGeoVisualization\n\ntm_shape(hunan_sf) + \n  tm_polygons(\n    fill = \"GDPPC\",\n    fill.scale = tm_scale_intervals(\n      n = 5,\n      style = \"quantile\",\n      values = \"brewer.oranges\")) +\n  tm_borders(fill_alpha = 0.25,\n             lwd = 0.5) +\n  tm_title(\"Distribution of GDP per capita\") +\n  tm_layout(legend.position = c(\"left\", \"bottom\"))"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geospatial-analytics-solution",
-    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geospatial-analytics-solution",
-    "title": "In-class_Ex04",
-    "section": "Geospatial analytics solution",
-    "text": "Geospatial analytics solution\n\nDetermine the bandwidth\n\nbw &lt;- bw.gwr(GDPPC ~ GIO, \n             data = hunan_sp, \n             approach = \"AICc\",\n             kernel = \"bisquare\",\n             adaptive = TRUE)\n\nAdaptive bandwidth (number of nearest neighbours): 62 AICc value: 1870.235 \nAdaptive bandwidth (number of nearest neighbours): 46 AICc value: 1870.852 \nAdaptive bandwidth (number of nearest neighbours): 72 AICc value: 1869.744 \nAdaptive bandwidth (number of nearest neighbours): 78 AICc value: 1869.713 \nAdaptive bandwidth (number of nearest neighbours): 82 AICc value: 1869.604 \nAdaptive bandwidth (number of nearest neighbours): 84 AICc value: 1869.537 \nAdaptive bandwidth (number of nearest neighbours): 86 AICc value: 1869.647 \nAdaptive bandwidth (number of nearest neighbours): 83 AICc value: 1869.567 \nAdaptive bandwidth (number of nearest neighbours): 84 AICc value: 1869.537 \n\n\n\n\nComputing gwCorrelation\n\ngwstats &lt;- gwss(hunan_sp, \n                vars = c(\"GDPPC\", \"GIO\"), \n                bw = bw,\n                kernel = \"bisquare\",\n                adaptive = TRUE, \n                longlat = T)\n\n\n\nExtracting the Result\n\ngwstat_df &lt;- as.data.frame(gwstats$SDF) %&gt;%\n  select(c(12,13)) %&gt;%\n  rename(gwCorr = Corr_GDPPC.GIO,\n         gwSpearman = Spearman_rho_GDPPC.GIO)\n\n\nhunan_Corr &lt;- cbind(hunan_sf, gwstat_df)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#visualising-local-correlation",
-    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#visualising-local-correlation",
-    "title": "In-class_Ex04",
-    "section": "Visualising Local Correlation",
-    "text": "Visualising Local Correlation\n\ntm_shape(hunan_Corr) +\n  tm_polygons(fill = \"gwSpearman\",\n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 5,\n                values = \"brewer.blues\"),\n              fill.legend = tm_legend(\n                title = \"local Spearman Rho\")) +\n  tm_borders(fill_alpha = 0.5) +\n  tm_title(\"Local Spearman Rho\", \n  size = 2.0) +\n  tm_layout(frame = TRUE)"
+    "text": "This is a Quarto website.\nTo learn more about Quarto websites visit https://quarto.org/docs/websites.\n\n1 + 1\n\n[1] 2"
   },
   {
     "objectID": "Hands_on_Ex/Hands_onEx06/hands_on_ex06.html",
@@ -574,74 +623,186 @@
     "text": "Hot Spots and Cold Spots Analysis (HCSA)\n\nDeriving Distance Weight Matrix\n\nct &lt;- critical_threshold(st_geometry(hunan))\nct\n\n[1] 60799.91\n\n\n\nhunan_fdw &lt;- hunan %&gt;% \n  mutate(nb = include_self(\n    st_dist_band(\n      st_geometry(geometry), \n                 upper = ct)),\n    wt = st_weights(nb, \n                      style = \"W\"),\n    .before = 1) \n\n\nhunan_adw &lt;- hunan %&gt;%\n  mutate(nb = include_self(\n    st_knn(\n      st_geometry(geometry),\n      k = 6)),\n    wt = st_weights(\n      nb, style = \"W\"),\n    .before = 1)\n\n\n\nComputing Local Gi*\n\nset.seed(1234)\nHCSA_fdw &lt;- hunan_fdw %&gt;%\n  mutate(\n    gistar = local_gstar_perm(\n      GDPPC, nb, wt, nsim = 99),\n    .before = 1) %&gt;%\n  unnest(gistar)\n\n\n\nPreparing and Visualising HCSA Map\n\nMapping Gi* with Fixed Distance Weights\n\ntm_shape(HCSA_fdw) +\n  tm_polygons(fill = \"gi_star\",\n              fill.scale = tm_scale_intervals(\n                style = \"pretty\",\n                n = 6,\n                values = \"brewer.rd_bu\"),\n              fill.legend = tm_legend(\n                title = \"Gi*\",\n                position = tm_pos_out())) + \n  tm_borders(fill_alpha = 0.5) +\n  tm_title(\"Gi* of GDPPC (Fixed Bandwidth d = 60799.91m)\")\n\n\n\n\n\n\n\n\n\n\nMapping Local Gi* p-values\n\ntm_shape(HCSA_fdw) +\n  tm_polygons(fill = \"p_sim\", \n              fill.scale = tm_scale_intervals(\n                breaks = c(-Inf, 0.001, 0.01, 0.05, 0.1, Inf),\n                values = \"-brewer.Reds\"),\n              fill.legend = tm_legend(\n                title = \"simulated p-value\",\n      position = tm_pos_out())) + \n  tm_borders(fill_alpha = 0.5) +\n  tm_title(\"p-values of local Gi* of GDPPC (Fixed distance)\")\n\n\n\n\n\n\n\n\n\n\nMapping Both Gi* Values and p-values\n\nGi_star_map &lt;- tm_shape(HCSA_fdw) +\n  tm_polygons(fill = \"gi_star\",\n              fill.scale = tm_scale_intervals(\n                style = \"pretty\",\n                n = 5,\n                values = \"-brewer.rd_bu\"),\n              fill.legend = tm_legend(\n                title = \"local Gi*\",\n                position = tm_pos_in(\"left\", \"bottom\"))) + \n  tm_borders(fill_alpha = 0.5) +\n  tm_title(\"Local Gi* of GDPPC\")\n\n\np_values_map &lt;- tm_shape(HCSA_fdw) +\n  tm_polygons(fill = \"p_sim\", \n              fill.scale = tm_scale_intervals(\n                breaks = c(0, 0.001, 0.01, 0.05, 0.1, 1),\n                values = \"-brewer.reds\"),\n              fill.legend = tm_legend(\n                title = \"p-value\",\n      position = tm_pos_in(\"left\", \"bottom\")\n    )) + \n  tm_borders(fill_alpha = 0.5) +\n  tm_title(\"p-values of local Gi* of GDPPC (fixed distance)\")\n\n\ntmap_arrange(Gi_star_map, p_values_map, asp = 1, ncol = 2)\n\n\n\n\n\n\n\n\n\n\nPlotting and Visualising HCSA Map\n\nHCSA_fdw &lt;- HCSA_fdw %&gt;%\n  mutate(HCSA_cluster = case_when(\n    p_sim &gt; 0.05 ~ \"Insignificant\",\n    p_sim &lt;= 0.05 & cluster == \"High\" ~ \"Hot spot\",\n    p_sim &lt;= 0.05 & cluster == \"Low\"  ~ \"Cold spot\",\n    TRUE ~ \"Other\"),\n    HCSA_cluster = factor(\n      HCSA_cluster,\n      levels = c(\"Insignificant\", \"Hot spot\", \"Cold spot\")\n    ),\n    .before = 1\n  )\n\n\nHCSA_map &lt;- tm_shape(HCSA_fdw) + \n  tm_polygons(\n    fill = \"HCSA_cluster\",\n    fill.scale = tm_scale_categorical(\n      values = c(\n        \"grey80\",\n        \"red\",\n        \"blue\"\n      )\n    ),\n    fill.legend = tm_legend(\n      title = \"HSCA Cluster\",\n      position = tm_pos_in(\"left\", \"bottom\"))\n  ) +\n  tm_borders() +\n  tm_title(\"HCSA Clusters (p &lt; 0.05)\")\nHCSA_map\n\n\n\n\n\n\n\n\n\ntmap_arrange(Gi_star_map, HCSA_map, asp = 1, ncol = 2)\n\n\n\n\n\n\n\n\nThe Gi* statistic works differently from local Moran’s I, instead of looking for outliers vs clusters, it’s specifically hunting for hot spots (high values surrounded by other high values) and cold spots (low surrounded by low). This is why we needed distance-based neighbours instead of the contiguity-based ones from before, since Gi* is fundamentally about how much a location’s neighbourhood total compares to the overall average.\n\nset.seed(1234)\nlisa_nsim499 &lt;- wm_q %&gt;% \n  mutate(local_moran = local_moran(\n    GDPPC, nb, wt, nsim = 499),\n         .before = 1) %&gt;%\n  unnest(local_moran)\n\nsum(lisa$p_ii_sim &lt; 0.05)\n\n[1] 16\n\nsum(lisa_nsim499$p_ii_sim &lt; 0.05)\n\n[1] 15\n\n\nCurious whether bumping the simulations from 99 to 499 actually changes how many counties come out as statistically significant, since more simulations should give a more stable p-value estimate.\n\nset.seed(1234)\nHCSA_adw &lt;- hunan_adw %&gt;%\n  mutate(\n    gistar = local_gstar_perm(\n      GDPPC, nb, wt, nsim = 99),\n    .before = 1) %&gt;%\n  unnest(gistar)\n\nHCSA_adw &lt;- HCSA_adw %&gt;%\n  mutate(HCSA_cluster_adw = case_when(\n    p_sim &gt; 0.05 ~ \"Insignificant\",\n    p_sim &lt;= 0.05 & cluster == \"High\" ~ \"Hot spot\",\n    p_sim &lt;= 0.05 & cluster == \"Low\"  ~ \"Cold spot\",\n    TRUE ~ \"Other\"),\n    HCSA_cluster_adw = factor(\n      HCSA_cluster_adw,\n      levels = c(\"Insignificant\", \"Hot spot\", \"Cold spot\")\n    )\n  )\n\nHCSA_map_adw &lt;- tm_shape(HCSA_adw) + \n  tm_polygons(\n    fill = \"HCSA_cluster_adw\",\n    fill.scale = tm_scale_categorical(\n      values = c(\"grey80\", \"red\", \"blue\")\n    ),\n    fill.legend = tm_legend(\n      title = \"HSCA Cluster (adaptive)\",\n      position = tm_pos_in(\"left\", \"bottom\"))\n  ) +\n  tm_borders() +\n  tm_title(\"HCSA Clusters, Adaptive Weights (p &lt; 0.05)\")\n\ntmap_arrange(HCSA_map, HCSA_map_adw, asp = 1, ncol = 2)\n\n\n\n\n\n\n\n\nWorth comparing whether the hot spot/cold spot pattern actually changes depending on whether we use fixed distance neighbours or k=6 adaptive neighbours, since urban vs rural counties could get very different neighbourhood sizes under the fixed approach."
   },
   {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "GAA-Abinav-Test",
+    "objectID": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html",
+    "href": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html",
+    "title": "Modelling Geographical Accessibility",
     "section": "",
-    "text": "This is a Quarto website.\nTo learn more about Quarto websites visit https://quarto.org/docs/websites.\n\n1 + 1\n\n[1] 2"
+    "text": "We split Singapore into small hexagons, work out the travel distance from every hexagon to every eldercare centre, and then turn those distances into an accessibility score using three different methods: Hansen, KD2SFCA and SAM.\n\nset.seed(1234)\npacman::p_load(tmap, SpatialAcc, sf, \n               ggstatsplot, reshape2,\n               tidyverse)"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html",
-    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html",
-    "title": "In-class_Ex05",
+    "objectID": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#getting-started",
+    "href": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#getting-started",
+    "title": "Modelling Geographical Accessibility",
     "section": "",
-    "text": "pacman::p_load(sf, sfdep, tmap, tidyverse)"
+    "text": "We split Singapore into small hexagons, work out the travel distance from every hexagon to every eldercare centre, and then turn those distances into an accessibility score using three different methods: Hansen, KD2SFCA and SAM.\n\nset.seed(1234)\npacman::p_load(tmap, SpatialAcc, sf, \n               ggstatsplot, reshape2,\n               tidyverse)"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#installing-and-loading-the-r-packages",
-    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#installing-and-loading-the-r-packages",
-    "title": "In-class_Ex05",
-    "section": "",
-    "text": "pacman::p_load(sf, sfdep, tmap, tidyverse)"
+    "objectID": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#geospatial-data-wrangling",
+    "href": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#geospatial-data-wrangling",
+    "title": "Modelling Geographical Accessibility",
+    "section": "Geospatial Data Wrangling",
+    "text": "Geospatial Data Wrangling\n\nImporting Geospatial Data\n\nmpsz &lt;- st_read(dsn = \"data/geospatial\", \n                layer = \"MP14_SUBZONE_NO_SEA_PL\")\n\nReading layer `MP14_SUBZONE_NO_SEA_PL' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\Hands_on_Ex\\Hands_onEx07\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 323 features and 15 fields\nGeometry type: MULTIPOLYGON\nDimension:     XY\nBounding box:  xmin: 2667.538 ymin: 15748.72 xmax: 56396.44 ymax: 50256.33\nProjected CRS: SVY21\n\n\n\nhexagons &lt;- st_read(dsn = \"data/geospatial\", \n                    layer = \"hexagons\")\n\nReading layer `hexagons' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\Hands_on_Ex\\Hands_onEx07\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 3125 features and 6 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 2667.538 ymin: 21506.33 xmax: 50010.26 ymax: 50256.33\nProjected CRS: SVY21 / Singapore TM\n\n\n\neldercare &lt;- st_read(dsn = \"data/geospatial\", \n                     layer = \"ELDERCARE\")\n\nReading layer `ELDERCARE' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\Hands_on_Ex\\Hands_onEx07\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 120 features and 19 fields\nGeometry type: POINT\nDimension:     XY\nBounding box:  xmin: 14481.92 ymin: 28218.43 xmax: 41665.14 ymax: 46804.9\nProjected CRS: SVY21 / Singapore TM\n\n\nThree layers come in here. The subzone boundary gives us the planning regions, the hexagons are the origins (where people live), and the eldercare points are the destinations (where people want to get to).\n\n\nUpdating CRS Information\n\nmpsz &lt;- mpsz %&gt;% st_transform(3414)\neldercare &lt;- eldercare %&gt;% st_transform(3414)\nhexagons &lt;- hexagons %&gt;% st_transform(3414)\n\n\nst_crs(mpsz)\n\nCoordinate Reference System:\n  User input: EPSG:3414 \n  wkt:\nPROJCRS[\"SVY21 / Singapore TM\",\n    BASEGEOGCRS[\"SVY21\",\n        DATUM[\"SVY21\",\n            ELLIPSOID[\"WGS 84\",6378137,298.257223563,\n                LENGTHUNIT[\"metre\",1]]],\n        PRIMEM[\"Greenwich\",0,\n            ANGLEUNIT[\"degree\",0.0174532925199433]],\n        ID[\"EPSG\",4757]],\n    CONVERSION[\"Singapore Transverse Mercator\",\n        METHOD[\"Transverse Mercator\",\n            ID[\"EPSG\",9807]],\n        PARAMETER[\"Latitude of natural origin\",1.36666666666667,\n            ANGLEUNIT[\"degree\",0.0174532925199433],\n            ID[\"EPSG\",8801]],\n        PARAMETER[\"Longitude of natural origin\",103.833333333333,\n            ANGLEUNIT[\"degree\",0.0174532925199433],\n            ID[\"EPSG\",8802]],\n        PARAMETER[\"Scale factor at natural origin\",1,\n            SCALEUNIT[\"unity\",1],\n            ID[\"EPSG\",8805]],\n        PARAMETER[\"False easting\",28001.642,\n            LENGTHUNIT[\"metre\",1],\n            ID[\"EPSG\",8806]],\n        PARAMETER[\"False northing\",38744.572,\n            LENGTHUNIT[\"metre\",1],\n            ID[\"EPSG\",8807]]],\n    CS[Cartesian,2],\n        AXIS[\"northing (N)\",north,\n            ORDER[1],\n            LENGTHUNIT[\"metre\",1]],\n        AXIS[\"easting (E)\",east,\n            ORDER[2],\n            LENGTHUNIT[\"metre\",1]],\n    USAGE[\n        SCOPE[\"Cadastre, engineering survey, topographic mapping.\"],\n        AREA[\"Singapore - onshore and offshore.\"],\n        BBOX[1.13,103.59,1.47,104.07]],\n    ID[\"EPSG\",3414]]\n\n\nAll three layers get the same coordinate system, SVY21 (EPSG 3414), which is measured in metres. That matters here because every distance in the accessibility models is in metres.\n\n\nCleaning and Updating Attribute Fields\n\neldercare &lt;- eldercare %&gt;%\n  select(fid, ADDRESSPOS) %&gt;%\n  mutate(capacity = 100)\n\nhexagons &lt;- hexagons %&gt;%\n  select(fid) %&gt;%\n  mutate(demand = 100)\n\nBoth layers have lots of columns we do not need, so only the id and address are kept. Then two new columns are added: demand for every hexagon and capacity for every eldercare centre. Both are set to 100 as a placeholder."
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#import-shapefile-into-r-environment",
-    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#import-shapefile-into-r-environment",
-    "title": "In-class_Ex05",
+    "objectID": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#aspatial-data-handling-and-wrangling",
+    "href": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#aspatial-data-handling-and-wrangling",
+    "title": "Modelling Geographical Accessibility",
+    "section": "Aspatial Data Handling and Wrangling",
+    "text": "Aspatial Data Handling and Wrangling\n\nImporting Distance Matrix\n\n# Origin-destination distance matrix: csv\nODMatrix &lt;- read_csv(\"data/aspatial/OD_Matrix.csv\", skip = 0)\n\n\n\nTidying Distance Matrix\n\ndistmat &lt;- ODMatrix %&gt;%\n  select(origin_id, destination_id, total_cost) %&gt;%\n  arrange(origin_id, destination_id) %&gt;%\n  pivot_wider(names_from = destination_id, \n              values_from = total_cost) %&gt;%\n  select(-origin_id)\n\n\ndistmat_km &lt;- as.matrix(distmat / 1000)\n\nThe imported file has one row for every origin and destination pair, which makes it a very long list. The accessibility functions want a grid instead, with one row per hexagon and one column per eldercare centre, and pivot_wider() does that reshaping. The arrange() before it keeps the rows and columns in id order so they line up with the hexagon and eldercare tables. Dividing by 1000 turns metres into kilometres."
+  },
+  {
+    "objectID": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#modelling-and-visualising-accessibility-using-hansen-method",
+    "href": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#modelling-and-visualising-accessibility-using-hansen-method",
+    "title": "Modelling Geographical Accessibility",
+    "section": "Modelling and Visualising Accessibility Using Hansen Method",
+    "text": "Modelling and Visualising Accessibility Using Hansen Method\n\nComputing Hansen’s Accessibility\n\nacc_Hansen &lt;- data.frame(ac(hexagons$demand,\n                            eldercare$capacity,\n                            distmat_km, \n                            #d0 = 50,\n                            power = 2, \n                            family = \"Hansen\"))\n\n\ncolnames(acc_Hansen) &lt;- \"accHansen\"\n\n\nacc_Hansen &lt;- as_tibble(acc_Hansen)\n\n\nhexagon_Hansen &lt;- bind_cols(hexagons, acc_Hansen)\n\n\nacc_Hansen &lt;- data.frame(ac(hexagons$demand,\n                            eldercare$capacity,\n                            distmat_km, \n                            #d0 = 50,\n                            power = 0.5, \n                            family = \"Hansen\"))\n\ncolnames(acc_Hansen) &lt;- \"accHansen\"\nacc_Hansen &lt;- as_tibble(acc_Hansen)\nhexagon_Hansen &lt;- bind_cols(hexagons, acc_Hansen)\n\nHansen’s measure adds up the eldercare places reachable from each hexagon, giving closer centres more weight than far away ones. The power controls how quickly that weight drops as distance grows. The first chunks do it step by step with a power of 2, and the single chunk does the same job in one go.\n\n\nVisualising Hansen’s Accessibility\n\nmapex &lt;- st_bbox(hexagons)\n\n\ntm_shape(hexagon_Hansen,\n         bbox = mapex) + \n  tm_polygons(fill = \"accHansen\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"brewer.blues\")) +\ntm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"Accessibility to eldercare: Hansen method\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type = \"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)\n\n\n\n\n\n\n\n\nDarker hexagons have better access. The darkest areas should sit near clusters of red dots, with lighter areas where the nearest centre is far away.\n\n\nHow Much Does the Distance Decay Matter?\n\nhansen_power &lt;- map_dfr(c(0.5, 1, 2), function(p) {\n  tibble(power = factor(p),\n         accHansen = as.numeric(ac(hexagons$demand,\n                                   eldercare$capacity,\n                                   distmat_km,\n                                   power = p,\n                                   family = \"Hansen\")))\n})\n\n\nggplot(data = hansen_power, \n       aes(x = log(accHansen), fill = power)) +\n  geom_density(alpha = 0.4) +\n  labs(x = \"log(Hansen accessibility)\",\n       y = \"Density\",\n       fill = \"Power\")\n\n\n\n\n\n\n\n\n\nhansen_power %&gt;%\n  group_by(power) %&gt;%\n  summarise(median = median(accHansen),\n            max = max(accHansen))\n\n# A tibble: 3 × 3\n  power  median   max\n  &lt;fct&gt;   &lt;dbl&gt; &lt;dbl&gt;\n1 0.5   88.7    1158.\n2 1      6.37    538.\n3 2      0.0683  198.\n\n\nThe writeup uses a power of 2 in one place and 0.5 in another, so it is worth seeing what that choice does. A higher power should make far away centres count for much less, while a lower power lets distant centres still contribute. The density plot and the small table compare 0.5, 1 and 2 side by side.\n\n\nStatistical Graphic Visualisation\n\nhexagon_Hansen &lt;- st_join(hexagon_Hansen, mpsz, \n                          join = st_intersects)\n\n\nggplot(data = hexagon_Hansen, \n       aes(y = log(accHansen), \n           x = REGION_N)) +\n  geom_boxplot() +\n  geom_point(stat = \"summary\", \n             fun = \"mean\", \n             colour = \"red\", \n             size = 2)\n\n\n\n\n\n\n\n\nThe hexagon table does not know which planning region each hexagon sits in, so it is joined to the subzone boundary first. The boxplot then compares the scores across regions, with a red dot marking each region’s average. The log is used so a few very large values do not squash the rest of the plot.\n\n\nIs the Difference Between Regions Real?\n\nhansen_region &lt;- hexagon_Hansen %&gt;%\n  st_drop_geometry() %&gt;%\n  filter(!is.na(REGION_N)) %&gt;%\n  mutate(log_accHansen = log(accHansen))\n\n\nggbetweenstats(data = hansen_region,\n               x = REGION_N,\n               y = log_accHansen,\n               type = \"nonparametric\",\n               xlab = \"Planning region\",\n               ylab = \"log(Hansen accessibility)\")\n\n\n\n\n\n\n\n\nA boxplot shows differences but cannot say whether they are bigger than what chance alone would give. ggstatsplot was loaded at the start but the writeup never uses it, so this puts it to work. ggbetweenstats runs a Kruskal Wallis test, which does not assume the scores follow a normal distribution, and then compares the regions in pairs."
+  },
+  {
+    "objectID": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#modelling-and-visualising-accessibility-using-kd2sfca-method",
+    "href": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#modelling-and-visualising-accessibility-using-kd2sfca-method",
+    "title": "Modelling Geographical Accessibility",
+    "section": "Modelling and Visualising Accessibility Using KD2SFCA Method",
+    "text": "Modelling and Visualising Accessibility Using KD2SFCA Method\n\nComputing KD2SFCA’s Accessibility\n\nacc_KD2SFCA &lt;- data.frame(ac(hexagons$demand,\n                             eldercare$capacity,\n                             distmat_km, \n                             d0 = 5,\n                             power = 2, \n                             family = \"KD2SFCA\"))\n\ncolnames(acc_KD2SFCA) &lt;- \"accKD2SFCA\"\nacc_KD2SFCA &lt;- as_tibble(acc_KD2SFCA)\nhexagon_KD2SFCA &lt;- bind_cols(hexagons, acc_KD2SFCA)\n\nKD2SFCA is a more careful method than Hansen. It only counts eldercare centres within a set distance of each hexagon (d0 = 5 km here), and it also takes into account how many other hexagons are competing for the same centre. A centre that serves a huge crowd contributes less to each person than one that serves only a few.\n\n\nVisualising KD2SFCA’s Accessibility\n\ntm_shape(hexagon_KD2SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"accKD2SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"brewer.blues\")) +\ntm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"Accessibility to eldercare: KD2SFCA method\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type = \"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)\n\n\n\n\n\n\n\n\nSame map as before but with the KD2SFCA scores, so it is worth comparing it with the Hansen map to see which areas change colour.\n\n\nExtra: Where Is Access Lowest?\n\nhexagon_KD2SFCA &lt;- hexagon_KD2SFCA %&gt;%\n  mutate(low_access = factor(\n    accKD2SFCA &lt;= quantile(accKD2SFCA, 0.1, na.rm = TRUE),\n    levels = c(FALSE, TRUE),\n    labels = c(\"Other\", \"Lowest 10%\")))\n\n\ntm_shape(hexagon_KD2SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"low_access\",\n              fill.scale = tm_scale_categorical(\n                values = c(\"grey90\", \"red\")),\n              fill.legend = tm_legend(\n                title = \"KD2SFCA accessibility\")) +\ntm_shape(eldercare) +\n  tm_dots(size = 0.2,\n          fill = \"black\") +\n  tm_title(\"Hexagons with the lowest 10% accessibility (KD2SFCA)\") +\n  tm_layout(frame = TRUE)\n\n\n\n\n\n\n\n\nA map with ten shades is good for the overall picture, but a planner mostly wants to know where the problem spots are. This one shades only the worst 10% of hexagons in red and leaves everything else grey, with the eldercare centres as black dots, so under served areas stand out straight away.\n\n\nHow Much Does the 5 km Cut Off Matter?\n\nkd2sfca_d0 &lt;- map_dfr(c(2, 5, 10), function(d) {\n  tibble(d0 = factor(d),\n         accKD2SFCA = as.numeric(ac(hexagons$demand,\n                                    eldercare$capacity,\n                                    distmat_km,\n                                    d0 = d,\n                                    power = 2,\n                                    family = \"KD2SFCA\")))\n})\n\n\nkd2sfca_d0 %&gt;%\n  group_by(d0) %&gt;%\n  summarise(median = median(accKD2SFCA, na.rm = TRUE),\n            share_zero = mean(accKD2SFCA == 0, na.rm = TRUE))\n\n# A tibble: 3 × 3\n  d0          median share_zero\n  &lt;fct&gt;        &lt;dbl&gt;      &lt;dbl&gt;\n1 2     0                 0.781\n2 5     0.0000000325      0.410\n3 10    0.0000000325      0.204\n\n\n\nggplot(data = kd2sfca_d0, \n       aes(x = d0, y = accKD2SFCA)) +\n  geom_boxplot() +\n  labs(x = \"Catchment distance d0 (km)\",\n       y = \"KD2SFCA accessibility\")\n\n\n\n\n\n\n\n\nThe writeup picks 5 km for the catchment without saying why, so here the same model is run with 2, 5 and 10 km. A small catchment is stricter, so more hexagons should end up with no reachable centre at all, which is what the share_zero column shows. A large catchment is more forgiving, so the scores should look more alike across the island.\n\n\nStatistical Graphic Visualisation\n\nhexagon_KD2SFCA &lt;- st_join(hexagon_KD2SFCA, mpsz, \n                           join = st_intersects)\n\n\nggplot(data = hexagon_KD2SFCA, \n       aes(y = accKD2SFCA, \n           x = REGION_N)) +\n  geom_boxplot() +\n  geom_point(stat = \"summary\", \n             fun = \"mean\", \n             colour = \"red\", \n             size = 2)\n\n\n\n\n\n\n\n\nSame idea as the Hansen boxplot, with planning regions along the bottom and accessibility up the side. This time the raw scores are plotted without a log, so the differences between regions show on their original scale."
+  },
+  {
+    "objectID": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#modelling-and-visualising-accessibility-using-spatial-accessibility-measure-sam-method",
+    "href": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#modelling-and-visualising-accessibility-using-spatial-accessibility-measure-sam-method",
+    "title": "Modelling Geographical Accessibility",
+    "section": "Modelling and Visualising Accessibility Using Spatial Accessibility Measure (SAM) Method",
+    "text": "Modelling and Visualising Accessibility Using Spatial Accessibility Measure (SAM) Method\n\nComputing SAM Accessibility\n\nacc_SAM &lt;- data.frame(ac(hexagons$demand,\n                         eldercare$capacity,\n                         distmat_km, \n                         d0 = 5,\n                         power = 2, \n                         family = \"SAM\"))\n\ncolnames(acc_SAM) &lt;- \"accSAM\"\nacc_SAM &lt;- as_tibble(acc_SAM)\nhexagon_SAM &lt;- bind_cols(hexagons, acc_SAM)\n\nSAM is the third method. It is run with the same 5 km catchment and power of 2 as KD2SFCA, so any difference between the two maps comes from the method and not from the settings.\n\n\nVisualising SAM’s Accessibility\n\ntm_shape(hexagon_SAM,\n         bbox = mapex) + \n  tm_polygons(fill = \"accSAM\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"brewer.blues\")) +\ntm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"Accessibility to eldercare: SAM method\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type = \"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)\n\n\n\n\n\n\n\n\n\n\nStatistical Graphic Visualisation\n\nhexagon_SAM &lt;- st_join(hexagon_SAM, mpsz, \n                       join = st_intersects)\n\n\nggplot(data = hexagon_SAM, \n       aes(y = accSAM, \n           x = REGION_N)) +\n  geom_boxplot() +\n  geom_point(stat = \"summary\", \n             fun = \"mean\", \n             colour = \"red\", \n             size = 2)\n\n\n\n\n\n\n\n\nThe last boxplot completes the set, so we now have maps and region comparisons for all three methods.\n\n\nDo the Three Methods Agree?\n\nacc_all &lt;- bind_cols(acc_Hansen, acc_KD2SFCA, acc_SAM)\n\n\ncor(acc_all, \n    method = \"spearman\", \n    use = \"pairwise.complete.obs\")\n\n           accHansen accKD2SFCA    accSAM\naccHansen  1.0000000  0.9048618 0.9860652\naccKD2SFCA 0.9048618  1.0000000 0.9091429\naccSAM     0.9860652  0.9091429 1.0000000\n\n\n\nggplot(data = acc_all, \n       aes(x = accKD2SFCA, y = accSAM)) +\n  geom_point(alpha = 0.3) +\n  labs(x = \"KD2SFCA accessibility\",\n       y = \"SAM accessibility\")\n\n\n\n\n\n\n\n\nAfter three methods, the obvious question is whether they tell the same story. The scores are put side by side using the original score tables and not the hexagon tables, because the region join repeats hexagons that touch more than one subzone, so those rows would no longer line up. The Hansen column here is the power 0.5 version. A correlation close to 1 means the methods rank the hexagons in nearly the same order. Spearman is used because it only looks at rankings, so the very different scales of the three scores do not matter."
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html",
+    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html",
+    "title": "In-class_Ex04",
+    "section": "",
+    "text": "pacman::p_load(sf, ggstatsplot, tmap, tidyverse, knitr, GWmodel)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#the-code",
+    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#the-code",
+    "title": "In-class_Ex04",
+    "section": "",
+    "text": "pacman::p_load(sf, ggstatsplot, tmap, tidyverse, knitr, GWmodel)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#preparing-the-data",
+    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#preparing-the-data",
+    "title": "In-class_Ex04",
+    "section": "Preparing the Data",
+    "text": "Preparing the Data\n\nImporting Hunan shapefile\n\nhunan_sf &lt;- st_read(dsn = \"data/geospatial\", layer = \"Hunan\")\n\nReading layer `Hunan' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex04\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 88 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 108.7831 ymin: 24.6342 xmax: 114.2544 ymax: 30.12812\nGeodetic CRS:  WGS 84\n\n\n\n\nimporting Hunan_2012 table\n\nhunan2012 &lt;- read_csv(\"data/aspatial/Hunan_2012.csv\")\n\n\n\nJoining Hunan and Hunan_2012\n\nhunan_sf &lt;- left_join(hunan_sf, hunan2012) %&gt;%\n  select(1:3, 7, 15, 16, 31, 32)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#mapping-gdppc",
+    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#mapping-gdppc",
+    "title": "In-class_Ex04",
+    "section": "Mapping GDPPC",
+    "text": "Mapping GDPPC"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#converting-to-spatialpolygondataframe",
+    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#converting-to-spatialpolygondataframe",
+    "title": "In-class_Ex04",
+    "section": "Converting to SpatialPolygonDataFrame",
+    "text": "Converting to SpatialPolygonDataFrame\n\nhunan_sp &lt;- hunan_sf %&gt;%\n  as_Spatial()"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geographically-weighted-summary-statistics-gsww",
+    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geographically-weighted-summary-statistics-gsww",
+    "title": "In-class_Ex04",
+    "section": "Geographically Weighted Summary Statistics (GSWW)",
+    "text": "Geographically Weighted Summary Statistics (GSWW)\n\nDetermine adaptive bandwidth\nCross-Validation\n\nbw_CV &lt;- bw.gwr(GDPPC ~ 1,\n                data = hunan_sp,\n                approach = \"CV\",\n                adaptive = TRUE,\n                kernel = \"bisquare\",\n                longlat = T) \n\nAdaptive bandwidth: 62 CV score: 15515442343 \nAdaptive bandwidth: 46 CV score: 14937956887 \nAdaptive bandwidth: 36 CV score: 14408561608 \nAdaptive bandwidth: 29 CV score: 14198527496 \nAdaptive bandwidth: 26 CV score: 13898800611 \nAdaptive bandwidth: 22 CV score: 13662299974 \nAdaptive bandwidth: 22 CV score: 13662299974 \n\n\n\nbw_CV\n\n[1] 22\n\n\nAICc\n\nbw_AIC &lt;- bw.gwr(GDPPC ~ 1,\n                data = hunan_sp,\n                approach = \"AICc\",\n                adaptive = TRUE,\n                kernel = \"bisquare\",\n                longlat = T) \n\nAdaptive bandwidth (number of nearest neighbours): 62 AICc value: 1923.156 \nAdaptive bandwidth (number of nearest neighbours): 46 AICc value: 1920.469 \nAdaptive bandwidth (number of nearest neighbours): 36 AICc value: 1917.324 \nAdaptive bandwidth (number of nearest neighbours): 29 AICc value: 1916.661 \nAdaptive bandwidth (number of nearest neighbours): 26 AICc value: 1914.897 \nAdaptive bandwidth (number of nearest neighbours): 22 AICc value: 1914.045 \nAdaptive bandwidth (number of nearest neighbours): 22 AICc value: 1914.045 \n\n\n\nbw_AIC\n\n[1] 22\n\n\n\n\nComputing geographically weighted summary statistics\nThe code chunk below computes geographically weighted summary statistics by using gwss() of GWmodel package. The analysis is performed using adaptive distance weighted. The distance is derived using AICc method and the kernel method used is bisquare.\n\ngw_stat &lt;- gwss(data = hunan_sp,\n                vars = \"GDPPC\",\n                bw = bw_AIC,\n                kernel = \"bisquare\",\n                adaptive = TRUE,\n                quantile = TRUE,\n                longlat = T) \n\n\n\nPreparing the output data\n\ngwstat_df &lt;- as.data.frame(gw_stat$SDF)\n\n\nhunan_gstat &lt;- cbind(hunan_sf, gwstat_df)\n\n\n\nVisualising geographically weighted summary statistics"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#gwss-with-fixed-bandwidth",
+    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#gwss-with-fixed-bandwidth",
+    "title": "In-class_Ex04",
+    "section": "GWSS with Fixed Bandwidth",
+    "text": "GWSS with Fixed Bandwidth\n\nDetermine fixed bandwidth\nCross Validation\n\nbw_CV &lt;- bw.gwr(GDPPC ~ 1, \n             data = hunan_sp,\n             approach = \"CV\",\n             adaptive = FALSE, \n             kernel = \"bisquare\", \n             longlat = T)\n\nFixed bandwidth: 357.4897 CV score: 16265191728 \nFixed bandwidth: 220.985 CV score: 14954930931 \nFixed bandwidth: 136.6204 CV score: 14134185837 \nFixed bandwidth: 84.48025 CV score: 13693362460 \nFixed bandwidth: 52.25585 CV score: Inf \nFixed bandwidth: 104.396 CV score: 13891052305 \nFixed bandwidth: 72.17162 CV score: 13577893677 \nFixed bandwidth: 64.56447 CV score: 14681160609 \nFixed bandwidth: 76.8731 CV score: 13444716890 \nFixed bandwidth: 79.77877 CV score: 13503296834 \nFixed bandwidth: 75.07729 CV score: 13452450771 \nFixed bandwidth: 77.98296 CV score: 13457916138 \nFixed bandwidth: 76.18716 CV score: 13442911302 \nFixed bandwidth: 75.76323 CV score: 13444600639 \nFixed bandwidth: 76.44916 CV score: 13442994078 \nFixed bandwidth: 76.02523 CV score: 13443285248 \nFixed bandwidth: 76.28724 CV score: 13442844774 \nFixed bandwidth: 76.34909 CV score: 13442864995 \nFixed bandwidth: 76.24901 CV score: 13442855596 \nFixed bandwidth: 76.31086 CV score: 13442847019 \nFixed bandwidth: 76.27264 CV score: 13442846793 \nFixed bandwidth: 76.29626 CV score: 13442844829 \nFixed bandwidth: 76.28166 CV score: 13442845238 \nFixed bandwidth: 76.29068 CV score: 13442844678 \nFixed bandwidth: 76.29281 CV score: 13442844691 \nFixed bandwidth: 76.28937 CV score: 13442844698 \nFixed bandwidth: 76.2915 CV score: 13442844676 \nFixed bandwidth: 76.292 CV score: 13442844679 \nFixed bandwidth: 76.29119 CV score: 13442844676 \nFixed bandwidth: 76.29099 CV score: 13442844676 \nFixed bandwidth: 76.29131 CV score: 13442844676 \nFixed bandwidth: 76.29138 CV score: 13442844676 \nFixed bandwidth: 76.29126 CV score: 13442844676 \nFixed bandwidth: 76.29123 CV score: 13442844676 \n\n\nAICc\n\nbw_AIC &lt;- bw.gwr(GDPPC ~ 1, \n             data = hunan_sp,\n             approach =\"AICc\",\n             adaptive = FALSE, \n             kernel = \"bisquare\", \n             longlat = T)\n\nFixed bandwidth: 357.4897 AICc value: 1927.631 \nFixed bandwidth: 220.985 AICc value: 1921.547 \nFixed bandwidth: 136.6204 AICc value: 1919.993 \nFixed bandwidth: 84.48025 AICc value: 1940.603 \nFixed bandwidth: 168.8448 AICc value: 1919.457 \nFixed bandwidth: 188.7606 AICc value: 1920.007 \nFixed bandwidth: 156.5362 AICc value: 1919.41 \nFixed bandwidth: 148.929 AICc value: 1919.527 \nFixed bandwidth: 161.2377 AICc value: 1919.392 \nFixed bandwidth: 164.1433 AICc value: 1919.403 \nFixed bandwidth: 159.4419 AICc value: 1919.393 \nFixed bandwidth: 162.3475 AICc value: 1919.394 \nFixed bandwidth: 160.5517 AICc value: 1919.391 \n\n\n\n\nComputing fixed bandwidth GWSS\n\ngwstat &lt;- gwss(data = hunan_sp,\n               vars = \"GDPPC\",\n               bw = bw_AIC,\n               kernel = \"bisquare\",\n               adaptive = FALSE,\n               quantile = TRUE,\n               longlat = T)\n\n\n\nPreparing the output data\n\ngwstat_df &lt;- as.data.frame(gwstat$SDF)\n\n\nhunan_gstat &lt;- cbind(hunan_sf, gwstat_df)\n\n\n\nVisualising fixed bandwidth geographically weighted mean\n\ntm_shape(hunan_gstat) +\n  tm_polygons(fill = \"GDPPC_LM\",\n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 5,\n                values = \"brewer.blues\"),\n              fill.legend = tm_legend(\n                title = \"local Mean\")) +\n  tm_borders(fill_alpha = 0.5) +\n  tm_title(\"Distribution of geographically wieghted mean\") + \n  tm_layout(legend.position = c(\"left\", \"bottom\"))"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geographically-weighted-correlation",
+    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geographically-weighted-correlation",
+    "title": "In-class_Ex04",
+    "section": "Geographically Weighted Correlation",
+    "text": "Geographically Weighted Correlation\n\nConventional Statistical Solution\n\nggscatterstats(\n  data = hunan2012, \n  x = Agri, \n  y = GDPPC,\n  xlab = \"Gross Agriculture Output\", \n  ylab = \"GDP per capita\", \n  label.var = County, \n  label.expression = Agri &gt; 10000 & GDPPC &gt; 50000, \n  point.label.args = list(alpha = 0.7, size = 4, color = \"grey50\"),\n  xfill = \"#CC79A7\", \n  yfill = \"#009E73\", \n  title = \"Relationship between GDP PC and Gross Agriculture Output\")\n\n\n\n\n\n\n\n\n\n\nGeoVisualization\n\ntm_shape(hunan_sf) + \n  tm_polygons(\n    fill = \"GDPPC\",\n    fill.scale = tm_scale_intervals(\n      n = 5,\n      style = \"quantile\",\n      values = \"brewer.oranges\")) +\n  tm_borders(fill_alpha = 0.25,\n             lwd = 0.5) +\n  tm_title(\"Distribution of GDP per capita\") +\n  tm_layout(legend.position = c(\"left\", \"bottom\"))"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geospatial-analytics-solution",
+    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geospatial-analytics-solution",
+    "title": "In-class_Ex04",
+    "section": "Geospatial analytics solution",
+    "text": "Geospatial analytics solution\n\nDetermine the bandwidth\n\nbw &lt;- bw.gwr(GDPPC ~ GIO, \n             data = hunan_sp, \n             approach = \"AICc\",\n             kernel = \"bisquare\",\n             adaptive = TRUE)\n\nAdaptive bandwidth (number of nearest neighbours): 62 AICc value: 1870.235 \nAdaptive bandwidth (number of nearest neighbours): 46 AICc value: 1870.852 \nAdaptive bandwidth (number of nearest neighbours): 72 AICc value: 1869.744 \nAdaptive bandwidth (number of nearest neighbours): 78 AICc value: 1869.713 \nAdaptive bandwidth (number of nearest neighbours): 82 AICc value: 1869.604 \nAdaptive bandwidth (number of nearest neighbours): 84 AICc value: 1869.537 \nAdaptive bandwidth (number of nearest neighbours): 86 AICc value: 1869.647 \nAdaptive bandwidth (number of nearest neighbours): 83 AICc value: 1869.567 \nAdaptive bandwidth (number of nearest neighbours): 84 AICc value: 1869.537 \n\n\n\n\nComputing gwCorrelation\n\ngwstats &lt;- gwss(hunan_sp, \n                vars = c(\"GDPPC\", \"GIO\"), \n                bw = bw,\n                kernel = \"bisquare\",\n                adaptive = TRUE, \n                longlat = T)\n\n\n\nExtracting the Result\n\ngwstat_df &lt;- as.data.frame(gwstats$SDF) %&gt;%\n  select(c(12,13)) %&gt;%\n  rename(gwCorr = Corr_GDPPC.GIO,\n         gwSpearman = Spearman_rho_GDPPC.GIO)\n\n\nhunan_Corr &lt;- cbind(hunan_sf, gwstat_df)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#visualising-local-correlation",
+    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#visualising-local-correlation",
+    "title": "In-class_Ex04",
+    "section": "Visualising Local Correlation",
+    "text": "Visualising Local Correlation\n\ntm_shape(hunan_Corr) +\n  tm_polygons(fill = \"gwSpearman\",\n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 5,\n                values = \"brewer.blues\"),\n              fill.legend = tm_legend(\n                title = \"local Spearman Rho\")) +\n  tm_borders(fill_alpha = 0.5) +\n  tm_title(\"Local Spearman Rho\", \n  size = 2.0) +\n  tm_layout(frame = TRUE)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html",
+    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html",
+    "title": "In-class_Ex06",
+    "section": "",
+    "text": "pacman::p_load(sf, sfdep, tmap, \n               plotly, tidyverse, \n               Kendall)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#installing-and-loading-the-r-packages",
+    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#installing-and-loading-the-r-packages",
+    "title": "In-class_Ex06",
+    "section": "",
+    "text": "pacman::p_load(sf, sfdep, tmap, \n               plotly, tidyverse, \n               Kendall)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#import-shapefile-into-r-environment",
+    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#import-shapefile-into-r-environment",
+    "title": "In-class_Ex06",
     "section": "Import Shapefile into R Environment",
-    "text": "Import Shapefile into R Environment\n\nhunan &lt;- st_read(dsn = \"data/geospatial\", \n                 layer = \"Hunan\")\n\nReading layer `Hunan' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex05\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 88 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 108.7831 ymin: 24.6342 xmax: 114.2544 ymax: 30.12812\nGeodetic CRS:  WGS 84"
+    "text": "Import Shapefile into R Environment\n\nhunan &lt;- st_read(dsn = \"data/geospatial\", \n                 layer = \"Hunan\")  %&gt;% \n  st_transform(crs = 32650)\n\nReading layer `Hunan' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex06\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 88 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 108.7831 ymin: 24.6342 xmax: 114.2544 ymax: 30.12812\nGeodetic CRS:  WGS 84"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#import-csv-file-into-r-environment",
-    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#import-csv-file-into-r-environment",
-    "title": "In-class_Ex05",
-    "section": "Import CSV File into R Environment",
-    "text": "Import CSV File into R Environment\n\nhunan2012 &lt;- read_csv(\"data/aspatial/Hunan_2012.csv\")"
+    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#import-attribute-table",
+    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#import-attribute-table",
+    "title": "In-class_Ex06",
+    "section": "Import Attribute table",
+    "text": "Import Attribute table\n\nGDPPC &lt;- read_csv(\n  \"data/aspatial/Hunan_GDPPC.csv\")"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#performing-relational-join",
-    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#performing-relational-join",
-    "title": "In-class_Ex05",
-    "section": "Performing Relational Join",
-    "text": "Performing Relational Join\n\nhunan_GDPPC &lt;- hunan %&gt;%\n  left_join(hunan2012) %&gt;%\n  select(1:4, 7, 15, 33)"
+    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#creating-time-series-cube",
+    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#creating-time-series-cube",
+    "title": "In-class_Ex06",
+    "section": "Creating Time Series Cube",
+    "text": "Creating Time Series Cube\n\nGDPPC_st &lt;- spacetime(GDPPC, hunan,\n                      .loc_col = \"County\",\n                      .time_col = \"Year\")\n\n\nis_spacetime_cube(GDPPC_st)\n\n[1] TRUE"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#global-measures-of-spatial-association",
-    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#global-measures-of-spatial-association",
-    "title": "In-class_Ex05",
-    "section": "Global Measures of Spatial Association",
-    "text": "Global Measures of Spatial Association\n\nStep 1: Deriving Queen’s contiguity weights: sfdep methods\n\nwm_q &lt;- hunan_GDPPC %&gt;%\n  mutate(nb = st_contiguity(geometry),\n         wt = st_weights(nb,\n                         style = \"W\"),\n         .before = 1)\n\n\n\nStep 2: Computing Global Moran’I\n\nmoranI &lt;- global_moran(wm_q$GDPPC,\n                       wm_q$nb,\n                       wm_q$wt)\nglimpse(moranI)\n\nList of 2\n $ I: num 0.301\n $ K: num 7.64\n\n\n##Performing Global Moran’I permutation test\n\nset.seed(!234) \n\nglobal_moran_perm (wm_q$GDPPC, \n                   wm_q$nb,\n                   wm_q$wt,\n                   nsim = 99)\n\n\n    Monte-Carlo simulation of Moran I\n\ndata:  x \nweights: listw  \nnumber of simulations + 1: 100 \n\nstatistic = 0.30075, observed rank = 100, p-value &lt; 2.2e-16\nalternative hypothesis: two.sided"
+    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#computing-gi",
+    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#computing-gi",
+    "title": "In-class_Ex06",
+    "section": "Computing Gi*",
+    "text": "Computing Gi*\n\nDerive the spatial weights\n\nGDPPC_nb &lt;- GDPPC_st %&gt;%\n  activate(\"geometry\") %&gt;%\n  mutate(nb = include_self(\n    st_contiguity(geometry)),\n    wt = st_inverse_distance(nb, \n                             geometry, \n                             scale = 1,\n                             alpha = 1),\n    .before = 1) %&gt;%\n  set_nbs(\"nb\") %&gt;%\n  set_wts(\"wt\")"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#computing-local-morans-i",
-    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#computing-local-morans-i",
-    "title": "In-class_Ex05",
-    "section": "Computing local Moran’s I",
-    "text": "Computing local Moran’s I\n\nlisa &lt;- wm_q %&gt;%\n  mutate(local_moran = local_moran(\n    GDPPC, nb, wt, nsim = 99),\n    .before = 1) %&gt;%\n  unnest(local_moran)"
+    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#computing-gi-1",
+    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#computing-gi-1",
+    "title": "In-class_Ex06",
+    "section": "Computing Gi*",
+    "text": "Computing Gi*\n\ngi_stars &lt;- GDPPC_nb %&gt;% \n  group_by(Year) %&gt;% \n  mutate(gi_star = local_gstar_perm(\n    GDPPC, nb, wt)) %&gt;% \n  tidyr::unnest(gi_star)"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#plotting-lisa-map",
-    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#plotting-lisa-map",
-    "title": "In-class_Ex05",
-    "section": "Plotting LISA map",
-    "text": "Plotting LISA map\n\nlisa_sig &lt;- lisa %&gt;%\n  filter(p_ii_sim &lt; 0.05)\ntmap_mode(\"plot\")\ntm_shape(lisa) + \n  tm_polygons() +\n  tm_borders(fill_alpha = 0.5) +\ntm_shape(lisa_sig) + \n  tm_polygons(fill = \"mean\", \n              fill.legend = tm_legend(\n                text.size = 1.15,\n                width = 6)) +\n  tm_borders(fill_alpha = 0.4) + \n  tm_layout(legend.title.size = 1.25)"
+    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#mann-kendall-test",
+    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#mann-kendall-test",
+    "title": "In-class_Ex06",
+    "section": "Mann-Kendall Test",
+    "text": "Mann-Kendall Test\n\nMann-Kendall Test on Gi\n\ncbg &lt;- gi_stars %&gt;% \n  ungroup() %&gt;% \n  filter(County == \"Changsha\") |&gt; \n  select(County, Year, gi_star)\n\n\nggplot(data = cbg, \n       aes(x = Year, \n           y = gi_star)) +\n  geom_line() +\n  theme_light()\n\n\n\n\n\n\n\n\n\n\nInteractive Mann-Kendall Plot\n\np &lt;- ggplot(data = cbg, \n       aes(x = Year, \n           y = gi_star)) +\n  geom_line() +\n  theme_light()\n\nggplotly(p)\n\n\n\n\n\n\n\nPrinting Mann-Kendall test report\n\ncbg %&gt;%\n  summarise(mk = list(\n    unclass(\n      Kendall::MannKendall(gi_star)))) %&gt;% \n  tidyr::unnest_wider(mk)\n\n# A tibble: 1 × 5\n    tau      sl     S     D  varS\n  &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;\n1 0.485 0.00742    66  136.  589.\n\n\n\n\nMann-Kendall test data.frame\n\nehsa &lt;- gi_stars %&gt;%\n  group_by(County) %&gt;%\n  summarise(mk = list(\n    unclass(\n      Kendall::MannKendall(gi_star)))) %&gt;%\n  tidyr::unnest_wider(mk)\nhead(ehsa)\n\n# A tibble: 6 × 6\n  County        tau        sl     S     D  varS\n  &lt;chr&gt;       &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;\n1 Anhua      0.191  0.303        26  136.  589.\n2 Anren     -0.294  0.108       -40  136.  589.\n3 Anxiang    0      1             0  136.  589.\n4 Baojing   -0.691  0.000128    -94  136.  589.\n5 Chaling   -0.0882 0.650       -12  136.  589.\n6 Changning -0.750  0.0000318  -102  136.  589.\n\n\n\nemerging &lt;- ehsa %&gt;% \n  arrange(sl, abs(tau)) %&gt;% \n  slice(1:10)\nhead(emerging)\n\n# A tibble: 6 × 6\n  County        tau         sl     S     D  varS\n  &lt;chr&gt;       &lt;dbl&gt;      &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;\n1 Shuangfeng  0.868 0.00000143   118  136.  589.\n2 Xiangtan    0.868 0.00000143   118  136.  589.\n3 Xiangxiang  0.868 0.00000143   118  136.  589.\n4 Chengbu    -0.824 0.00000482  -112  136.  589.\n5 Dongan     -0.824 0.00000482  -112  136.  589.\n6 Wugang     -0.809 0.00000712  -110  136.  589."
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#visualizing-p-value-of-local",
-    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#visualizing-p-value-of-local",
-    "title": "In-class_Ex05",
-    "section": "Visualizing p-value of local",
-    "text": "Visualizing p-value of local"
+    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#performing-emerging-hotspot-analysis",
+    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#performing-emerging-hotspot-analysis",
+    "title": "In-class_Ex06",
+    "section": "Performing Emerging Hotspot Analysis",
+    "text": "Performing Emerging Hotspot Analysis\n\nehsa &lt;- emerging_hotspot_analysis(\n  x = GDPPC_st, \n  .var = \"GDPPC\", \n  k = 1, \n  nsim = 99\n)\n\n\nVisualising the distribution of EHSA classes\n\nggplot(data = ehsa,\n       aes(x = classification)) +\n  geom_bar()\n\n\n\n\n\n\n\n\n\n\nVisualizing EHSA\n\nhunan_ehsa &lt;- hunan %&gt;%\n  left_join(ehsa,\n            by = join_by(County == location))\n\n\nehsa_sig &lt;- hunan_ehsa  %&gt;%\n  filter(p_value &lt; 0.05)\ntmap_mode(\"plot\")\ntm_shape(hunan_ehsa) +\n  tm_polygons() +\n  tm_borders(fill_alpha = 0.5) +\ntm_shape(ehsa_sig) +\n  tm_fill(\"classification\") + \n  tm_borders(fill_alpha = 0.4)"
   },
   {
     "objectID": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#research-question",
@@ -775,166 +936,5 @@
     "title": "Geospatial Analytics for Peace",
     "section": "Peace-Building Implications",
     "text": "Peace-Building Implications\n\nConflict is concentrated, not uniform: the High-High clusters, especially in the central-west, are candidates for prioritising humanitarian access, monitoring and protection work\nMost hot spots are sporadic, so priorities should be reviewed regularly rather than set once\nLow-Low areas should not be read as safe until reporting coverage is checked\nThe results show where and when events were recorded, not why; causes and the people at risk need local data"
-  },
-  {
-    "objectID": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html",
-    "href": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html",
-    "title": "Modelling Geographical Accessibility",
-    "section": "",
-    "text": "We split Singapore into small hexagons, work out the travel distance from every hexagon to every eldercare centre, and then turn those distances into an accessibility score using three different methods: Hansen, KD2SFCA and SAM.\n\nset.seed(1234)\npacman::p_load(tmap, SpatialAcc, sf, \n               ggstatsplot, reshape2,\n               tidyverse)"
-  },
-  {
-    "objectID": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#getting-started",
-    "href": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#getting-started",
-    "title": "Modelling Geographical Accessibility",
-    "section": "",
-    "text": "We split Singapore into small hexagons, work out the travel distance from every hexagon to every eldercare centre, and then turn those distances into an accessibility score using three different methods: Hansen, KD2SFCA and SAM.\n\nset.seed(1234)\npacman::p_load(tmap, SpatialAcc, sf, \n               ggstatsplot, reshape2,\n               tidyverse)"
-  },
-  {
-    "objectID": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#geospatial-data-wrangling",
-    "href": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#geospatial-data-wrangling",
-    "title": "Modelling Geographical Accessibility",
-    "section": "Geospatial Data Wrangling",
-    "text": "Geospatial Data Wrangling\n\nImporting Geospatial Data\n\nmpsz &lt;- st_read(dsn = \"data/geospatial\", \n                layer = \"MP14_SUBZONE_NO_SEA_PL\")\n\nReading layer `MP14_SUBZONE_NO_SEA_PL' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\Hands_on_Ex\\Hands_onEx07\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 323 features and 15 fields\nGeometry type: MULTIPOLYGON\nDimension:     XY\nBounding box:  xmin: 2667.538 ymin: 15748.72 xmax: 56396.44 ymax: 50256.33\nProjected CRS: SVY21\n\n\n\nhexagons &lt;- st_read(dsn = \"data/geospatial\", \n                    layer = \"hexagons\")\n\nReading layer `hexagons' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\Hands_on_Ex\\Hands_onEx07\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 3125 features and 6 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 2667.538 ymin: 21506.33 xmax: 50010.26 ymax: 50256.33\nProjected CRS: SVY21 / Singapore TM\n\n\n\neldercare &lt;- st_read(dsn = \"data/geospatial\", \n                     layer = \"ELDERCARE\")\n\nReading layer `ELDERCARE' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\Hands_on_Ex\\Hands_onEx07\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 120 features and 19 fields\nGeometry type: POINT\nDimension:     XY\nBounding box:  xmin: 14481.92 ymin: 28218.43 xmax: 41665.14 ymax: 46804.9\nProjected CRS: SVY21 / Singapore TM\n\n\nThree layers come in here. The subzone boundary gives us the planning regions, the hexagons are the origins (where people live), and the eldercare points are the destinations (where people want to get to).\n\n\nUpdating CRS Information\n\nmpsz &lt;- mpsz %&gt;% st_transform(3414)\neldercare &lt;- eldercare %&gt;% st_transform(3414)\nhexagons &lt;- hexagons %&gt;% st_transform(3414)\n\n\nst_crs(mpsz)\n\nCoordinate Reference System:\n  User input: EPSG:3414 \n  wkt:\nPROJCRS[\"SVY21 / Singapore TM\",\n    BASEGEOGCRS[\"SVY21\",\n        DATUM[\"SVY21\",\n            ELLIPSOID[\"WGS 84\",6378137,298.257223563,\n                LENGTHUNIT[\"metre\",1]]],\n        PRIMEM[\"Greenwich\",0,\n            ANGLEUNIT[\"degree\",0.0174532925199433]],\n        ID[\"EPSG\",4757]],\n    CONVERSION[\"Singapore Transverse Mercator\",\n        METHOD[\"Transverse Mercator\",\n            ID[\"EPSG\",9807]],\n        PARAMETER[\"Latitude of natural origin\",1.36666666666667,\n            ANGLEUNIT[\"degree\",0.0174532925199433],\n            ID[\"EPSG\",8801]],\n        PARAMETER[\"Longitude of natural origin\",103.833333333333,\n            ANGLEUNIT[\"degree\",0.0174532925199433],\n            ID[\"EPSG\",8802]],\n        PARAMETER[\"Scale factor at natural origin\",1,\n            SCALEUNIT[\"unity\",1],\n            ID[\"EPSG\",8805]],\n        PARAMETER[\"False easting\",28001.642,\n            LENGTHUNIT[\"metre\",1],\n            ID[\"EPSG\",8806]],\n        PARAMETER[\"False northing\",38744.572,\n            LENGTHUNIT[\"metre\",1],\n            ID[\"EPSG\",8807]]],\n    CS[Cartesian,2],\n        AXIS[\"northing (N)\",north,\n            ORDER[1],\n            LENGTHUNIT[\"metre\",1]],\n        AXIS[\"easting (E)\",east,\n            ORDER[2],\n            LENGTHUNIT[\"metre\",1]],\n    USAGE[\n        SCOPE[\"Cadastre, engineering survey, topographic mapping.\"],\n        AREA[\"Singapore - onshore and offshore.\"],\n        BBOX[1.13,103.59,1.47,104.07]],\n    ID[\"EPSG\",3414]]\n\n\nAll three layers get the same coordinate system, SVY21 (EPSG 3414), which is measured in metres. That matters here because every distance in the accessibility models is in metres.\n\n\nCleaning and Updating Attribute Fields\n\neldercare &lt;- eldercare %&gt;%\n  select(fid, ADDRESSPOS) %&gt;%\n  mutate(capacity = 100)\n\nhexagons &lt;- hexagons %&gt;%\n  select(fid) %&gt;%\n  mutate(demand = 100)\n\nBoth layers have lots of columns we do not need, so only the id and address are kept. Then two new columns are added: demand for every hexagon and capacity for every eldercare centre. Both are set to 100 as a placeholder."
-  },
-  {
-    "objectID": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#aspatial-data-handling-and-wrangling",
-    "href": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#aspatial-data-handling-and-wrangling",
-    "title": "Modelling Geographical Accessibility",
-    "section": "Aspatial Data Handling and Wrangling",
-    "text": "Aspatial Data Handling and Wrangling\n\nImporting Distance Matrix\n\n# Origin-destination distance matrix: csv\nODMatrix &lt;- read_csv(\"data/aspatial/OD_Matrix.csv\", skip = 0)\n\n\n\nTidying Distance Matrix\n\ndistmat &lt;- ODMatrix %&gt;%\n  select(origin_id, destination_id, total_cost) %&gt;%\n  arrange(origin_id, destination_id) %&gt;%\n  pivot_wider(names_from = destination_id, \n              values_from = total_cost) %&gt;%\n  select(-origin_id)\n\n\ndistmat_km &lt;- as.matrix(distmat / 1000)\n\nThe imported file has one row for every origin and destination pair, which makes it a very long list. The accessibility functions want a grid instead, with one row per hexagon and one column per eldercare centre, and pivot_wider() does that reshaping. The arrange() before it keeps the rows and columns in id order so they line up with the hexagon and eldercare tables. Dividing by 1000 turns metres into kilometres."
-  },
-  {
-    "objectID": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#modelling-and-visualising-accessibility-using-hansen-method",
-    "href": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#modelling-and-visualising-accessibility-using-hansen-method",
-    "title": "Modelling Geographical Accessibility",
-    "section": "Modelling and Visualising Accessibility Using Hansen Method",
-    "text": "Modelling and Visualising Accessibility Using Hansen Method\n\nComputing Hansen’s Accessibility\n\nacc_Hansen &lt;- data.frame(ac(hexagons$demand,\n                            eldercare$capacity,\n                            distmat_km, \n                            #d0 = 50,\n                            power = 2, \n                            family = \"Hansen\"))\n\n\ncolnames(acc_Hansen) &lt;- \"accHansen\"\n\n\nacc_Hansen &lt;- as_tibble(acc_Hansen)\n\n\nhexagon_Hansen &lt;- bind_cols(hexagons, acc_Hansen)\n\n\nacc_Hansen &lt;- data.frame(ac(hexagons$demand,\n                            eldercare$capacity,\n                            distmat_km, \n                            #d0 = 50,\n                            power = 0.5, \n                            family = \"Hansen\"))\n\ncolnames(acc_Hansen) &lt;- \"accHansen\"\nacc_Hansen &lt;- as_tibble(acc_Hansen)\nhexagon_Hansen &lt;- bind_cols(hexagons, acc_Hansen)\n\nHansen’s measure adds up the eldercare places reachable from each hexagon, giving closer centres more weight than far away ones. The power controls how quickly that weight drops as distance grows. The first chunks do it step by step with a power of 2, and the single chunk does the same job in one go.\n\n\nVisualising Hansen’s Accessibility\n\nmapex &lt;- st_bbox(hexagons)\n\n\ntm_shape(hexagon_Hansen,\n         bbox = mapex) + \n  tm_polygons(fill = \"accHansen\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"brewer.blues\")) +\ntm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"Accessibility to eldercare: Hansen method\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type = \"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)\n\n\n\n\n\n\n\n\nDarker hexagons have better access. The darkest areas should sit near clusters of red dots, with lighter areas where the nearest centre is far away.\n\n\nHow Much Does the Distance Decay Matter?\n\nhansen_power &lt;- map_dfr(c(0.5, 1, 2), function(p) {\n  tibble(power = factor(p),\n         accHansen = as.numeric(ac(hexagons$demand,\n                                   eldercare$capacity,\n                                   distmat_km,\n                                   power = p,\n                                   family = \"Hansen\")))\n})\n\n\nggplot(data = hansen_power, \n       aes(x = log(accHansen), fill = power)) +\n  geom_density(alpha = 0.4) +\n  labs(x = \"log(Hansen accessibility)\",\n       y = \"Density\",\n       fill = \"Power\")\n\n\n\n\n\n\n\n\n\nhansen_power %&gt;%\n  group_by(power) %&gt;%\n  summarise(median = median(accHansen),\n            max = max(accHansen))\n\n# A tibble: 3 × 3\n  power  median   max\n  &lt;fct&gt;   &lt;dbl&gt; &lt;dbl&gt;\n1 0.5   88.7    1158.\n2 1      6.37    538.\n3 2      0.0683  198.\n\n\nThe writeup uses a power of 2 in one place and 0.5 in another, so it is worth seeing what that choice does. A higher power should make far away centres count for much less, while a lower power lets distant centres still contribute. The density plot and the small table compare 0.5, 1 and 2 side by side.\n\n\nStatistical Graphic Visualisation\n\nhexagon_Hansen &lt;- st_join(hexagon_Hansen, mpsz, \n                          join = st_intersects)\n\n\nggplot(data = hexagon_Hansen, \n       aes(y = log(accHansen), \n           x = REGION_N)) +\n  geom_boxplot() +\n  geom_point(stat = \"summary\", \n             fun = \"mean\", \n             colour = \"red\", \n             size = 2)\n\n\n\n\n\n\n\n\nThe hexagon table does not know which planning region each hexagon sits in, so it is joined to the subzone boundary first. The boxplot then compares the scores across regions, with a red dot marking each region’s average. The log is used so a few very large values do not squash the rest of the plot.\n\n\nIs the Difference Between Regions Real?\n\nhansen_region &lt;- hexagon_Hansen %&gt;%\n  st_drop_geometry() %&gt;%\n  filter(!is.na(REGION_N)) %&gt;%\n  mutate(log_accHansen = log(accHansen))\n\n\nggbetweenstats(data = hansen_region,\n               x = REGION_N,\n               y = log_accHansen,\n               type = \"nonparametric\",\n               xlab = \"Planning region\",\n               ylab = \"log(Hansen accessibility)\")\n\n\n\n\n\n\n\n\nA boxplot shows differences but cannot say whether they are bigger than what chance alone would give. ggstatsplot was loaded at the start but the writeup never uses it, so this puts it to work. ggbetweenstats runs a Kruskal Wallis test, which does not assume the scores follow a normal distribution, and then compares the regions in pairs."
-  },
-  {
-    "objectID": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#modelling-and-visualising-accessibility-using-kd2sfca-method",
-    "href": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#modelling-and-visualising-accessibility-using-kd2sfca-method",
-    "title": "Modelling Geographical Accessibility",
-    "section": "Modelling and Visualising Accessibility Using KD2SFCA Method",
-    "text": "Modelling and Visualising Accessibility Using KD2SFCA Method\n\nComputing KD2SFCA’s Accessibility\n\nacc_KD2SFCA &lt;- data.frame(ac(hexagons$demand,\n                             eldercare$capacity,\n                             distmat_km, \n                             d0 = 5,\n                             power = 2, \n                             family = \"KD2SFCA\"))\n\ncolnames(acc_KD2SFCA) &lt;- \"accKD2SFCA\"\nacc_KD2SFCA &lt;- as_tibble(acc_KD2SFCA)\nhexagon_KD2SFCA &lt;- bind_cols(hexagons, acc_KD2SFCA)\n\nKD2SFCA is a more careful method than Hansen. It only counts eldercare centres within a set distance of each hexagon (d0 = 5 km here), and it also takes into account how many other hexagons are competing for the same centre. A centre that serves a huge crowd contributes less to each person than one that serves only a few.\n\n\nVisualising KD2SFCA’s Accessibility\n\ntm_shape(hexagon_KD2SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"accKD2SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"brewer.blues\")) +\ntm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"Accessibility to eldercare: KD2SFCA method\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type = \"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)\n\n\n\n\n\n\n\n\nSame map as before but with the KD2SFCA scores, so it is worth comparing it with the Hansen map to see which areas change colour.\n\n\nExtra: Where Is Access Lowest?\n\nhexagon_KD2SFCA &lt;- hexagon_KD2SFCA %&gt;%\n  mutate(low_access = factor(\n    accKD2SFCA &lt;= quantile(accKD2SFCA, 0.1, na.rm = TRUE),\n    levels = c(FALSE, TRUE),\n    labels = c(\"Other\", \"Lowest 10%\")))\n\n\ntm_shape(hexagon_KD2SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"low_access\",\n              fill.scale = tm_scale_categorical(\n                values = c(\"grey90\", \"red\")),\n              fill.legend = tm_legend(\n                title = \"KD2SFCA accessibility\")) +\ntm_shape(eldercare) +\n  tm_dots(size = 0.2,\n          fill = \"black\") +\n  tm_title(\"Hexagons with the lowest 10% accessibility (KD2SFCA)\") +\n  tm_layout(frame = TRUE)\n\n\n\n\n\n\n\n\nA map with ten shades is good for the overall picture, but a planner mostly wants to know where the problem spots are. This one shades only the worst 10% of hexagons in red and leaves everything else grey, with the eldercare centres as black dots, so under served areas stand out straight away.\n\n\nHow Much Does the 5 km Cut Off Matter?\n\nkd2sfca_d0 &lt;- map_dfr(c(2, 5, 10), function(d) {\n  tibble(d0 = factor(d),\n         accKD2SFCA = as.numeric(ac(hexagons$demand,\n                                    eldercare$capacity,\n                                    distmat_km,\n                                    d0 = d,\n                                    power = 2,\n                                    family = \"KD2SFCA\")))\n})\n\n\nkd2sfca_d0 %&gt;%\n  group_by(d0) %&gt;%\n  summarise(median = median(accKD2SFCA, na.rm = TRUE),\n            share_zero = mean(accKD2SFCA == 0, na.rm = TRUE))\n\n# A tibble: 3 × 3\n  d0          median share_zero\n  &lt;fct&gt;        &lt;dbl&gt;      &lt;dbl&gt;\n1 2     0                 0.781\n2 5     0.0000000325      0.410\n3 10    0.0000000325      0.204\n\n\n\nggplot(data = kd2sfca_d0, \n       aes(x = d0, y = accKD2SFCA)) +\n  geom_boxplot() +\n  labs(x = \"Catchment distance d0 (km)\",\n       y = \"KD2SFCA accessibility\")\n\n\n\n\n\n\n\n\nThe writeup picks 5 km for the catchment without saying why, so here the same model is run with 2, 5 and 10 km. A small catchment is stricter, so more hexagons should end up with no reachable centre at all, which is what the share_zero column shows. A large catchment is more forgiving, so the scores should look more alike across the island.\n\n\nStatistical Graphic Visualisation\n\nhexagon_KD2SFCA &lt;- st_join(hexagon_KD2SFCA, mpsz, \n                           join = st_intersects)\n\n\nggplot(data = hexagon_KD2SFCA, \n       aes(y = accKD2SFCA, \n           x = REGION_N)) +\n  geom_boxplot() +\n  geom_point(stat = \"summary\", \n             fun = \"mean\", \n             colour = \"red\", \n             size = 2)\n\n\n\n\n\n\n\n\nSame idea as the Hansen boxplot, with planning regions along the bottom and accessibility up the side. This time the raw scores are plotted without a log, so the differences between regions show on their original scale."
-  },
-  {
-    "objectID": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#modelling-and-visualising-accessibility-using-spatial-accessibility-measure-sam-method",
-    "href": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html#modelling-and-visualising-accessibility-using-spatial-accessibility-measure-sam-method",
-    "title": "Modelling Geographical Accessibility",
-    "section": "Modelling and Visualising Accessibility Using Spatial Accessibility Measure (SAM) Method",
-    "text": "Modelling and Visualising Accessibility Using Spatial Accessibility Measure (SAM) Method\n\nComputing SAM Accessibility\n\nacc_SAM &lt;- data.frame(ac(hexagons$demand,\n                         eldercare$capacity,\n                         distmat_km, \n                         d0 = 5,\n                         power = 2, \n                         family = \"SAM\"))\n\ncolnames(acc_SAM) &lt;- \"accSAM\"\nacc_SAM &lt;- as_tibble(acc_SAM)\nhexagon_SAM &lt;- bind_cols(hexagons, acc_SAM)\n\nSAM is the third method. It is run with the same 5 km catchment and power of 2 as KD2SFCA, so any difference between the two maps comes from the method and not from the settings.\n\n\nVisualising SAM’s Accessibility\n\ntm_shape(hexagon_SAM,\n         bbox = mapex) + \n  tm_polygons(fill = \"accSAM\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"brewer.blues\")) +\ntm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"Accessibility to eldercare: SAM method\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type = \"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)\n\n\n\n\n\n\n\n\n\n\nStatistical Graphic Visualisation\n\nhexagon_SAM &lt;- st_join(hexagon_SAM, mpsz, \n                       join = st_intersects)\n\n\nggplot(data = hexagon_SAM, \n       aes(y = accSAM, \n           x = REGION_N)) +\n  geom_boxplot() +\n  geom_point(stat = \"summary\", \n             fun = \"mean\", \n             colour = \"red\", \n             size = 2)\n\n\n\n\n\n\n\n\nThe last boxplot completes the set, so we now have maps and region comparisons for all three methods.\n\n\nDo the Three Methods Agree?\n\nacc_all &lt;- bind_cols(acc_Hansen, acc_KD2SFCA, acc_SAM)\n\n\ncor(acc_all, \n    method = \"spearman\", \n    use = \"pairwise.complete.obs\")\n\n           accHansen accKD2SFCA    accSAM\naccHansen  1.0000000  0.9048618 0.9860652\naccKD2SFCA 0.9048618  1.0000000 0.9091429\naccSAM     0.9860652  0.9091429 1.0000000\n\n\n\nggplot(data = acc_all, \n       aes(x = accKD2SFCA, y = accSAM)) +\n  geom_point(alpha = 0.3) +\n  labs(x = \"KD2SFCA accessibility\",\n       y = \"SAM accessibility\")\n\n\n\n\n\n\n\n\nAfter three methods, the obvious question is whether they tell the same story. The scores are put side by side using the original score tables and not the hexagon tables, because the region join repeats hexagons that touch more than one subzone, so those rows would no longer line up. The Hansen column here is the power 0.5 version. A correlation close to 1 means the methods rank the hexagons in nearly the same order. Spearman is used because it only looks at rankings, so the very different scales of the three scores do not matter."
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html",
-    "title": "In-class_Ex07",
-    "section": "",
-    "text": "if (!requireNamespace(\"catchment\", quietly = TRUE)) {\n  remotes::install_github(\"uva-bi-sdad/catchment\")\n}\nlibrary(catchment)\n\n\npacman::p_load(sf, tidyverse, tmap, accessibility, catchment)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#loading-r-package",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#loading-r-package",
-    "title": "In-class_Ex07",
-    "section": "",
-    "text": "if (!requireNamespace(\"catchment\", quietly = TRUE)) {\n  remotes::install_github(\"uva-bi-sdad/catchment\")\n}\nlibrary(catchment)\n\n\npacman::p_load(sf, tidyverse, tmap, accessibility, catchment)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#importing-geospatial-data",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#importing-geospatial-data",
-    "title": "In-class_Ex07",
-    "section": "Importing Geospatial data",
-    "text": "Importing Geospatial data\n\nmpsz &lt;- st_read(dsn = \"data/geospatial\", \n                layer = \"MP14_SUBZONE_NO_SEA_PL\") %&gt;%\n  st_transform(crs = 3414)\n\nReading layer `MP14_SUBZONE_NO_SEA_PL' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex07\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 323 features and 15 fields\nGeometry type: MULTIPOLYGON\nDimension:     XY\nBounding box:  xmin: 2667.538 ymin: 15748.72 xmax: 56396.44 ymax: 50256.33\nProjected CRS: SVY21\n\n\n\nhexagons &lt;- st_read(dsn = \"data/geospatial\", \n                    layer = \"hexagons\") %&gt;%\n  st_transform(crs = 3414)\n\nReading layer `hexagons' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex07\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 3125 features and 6 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 2667.538 ymin: 21506.33 xmax: 50010.26 ymax: 50256.33\nProjected CRS: SVY21 / Singapore TM\n\n\n\neldercare &lt;- st_read(dsn = \"data/geospatial\", \n                     layer = \"ELDERCARE\") %&gt;%\n  st_transform(crs = 3414)\n\nReading layer `ELDERCARE' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex07\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 120 features and 19 fields\nGeometry type: POINT\nDimension:     XY\nBounding box:  xmin: 14481.92 ymin: 28218.43 xmax: 41665.14 ymax: 46804.9\nProjected CRS: SVY21 / Singapore TM\n\n\n\nODMatrix &lt;- read_csv(\"data/aspatial/OD_Matrix.csv\", skip = 0)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#geospatial-preparation",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#geospatial-preparation",
-    "title": "In-class_Ex07",
-    "section": "Geospatial Preparation",
-    "text": "Geospatial Preparation\n\nhexagons &lt;- hexagons %&gt;%\n  select(fid) %&gt;%\n  mutate(demand = 100) %&gt;%\n  rename(id = fid)\n\n\neldercare &lt;- eldercare %&gt;%\n  select(fid) %&gt;%\n  mutate(capacity = 100)\n\n\nODMatrix_tidied &lt;- ODMatrix %&gt;%\n  select(origin_id, destination_id, total_cost) %&gt;%\n  rename(from_id = origin_id,\n         to_id = destination_id,\n         dist = total_cost)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#computing-minimum-travel-distance-to-nearest-oldercare",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#computing-minimum-travel-distance-to-nearest-oldercare",
-    "title": "In-class_Ex07",
-    "section": "Computing Minimum Travel Distance to nearest oldercare",
-    "text": "Computing Minimum Travel Distance to nearest oldercare\n\ndist2closest &lt;- cost_to_closest(\n  travel_matrix = ODMatrix_tidied,\n  land_use_data = hexagons,\n  opportunity = \"demand\",\n  travel_cost = \"dist\",\n  n = 1,\n  group_by = character(0),\n  active = TRUE,\n  fill_missing_ids = TRUE\n)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#joining-output",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#joining-output",
-    "title": "In-class_Ex07",
-    "section": "Joining output",
-    "text": "Joining output\n\nhex_acc &lt;- hexagons %&gt;%\n  left_join(dist2closest) %&gt;%\n  rename(dist2closest = dist)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-closest-distance",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-closest-distance",
-    "title": "In-class_Ex07",
-    "section": "Mapping closest distance",
-    "text": "Mapping closest distance\n\nmapex &lt;- st_bbox(hex_acc)\ntm_shape(hex_acc,\n         bbox = mapex) + \n  tm_polygons(fill = \"dist2closest\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"Accessibility to the closest eldercare\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#converting-odmatrix-data-frame-in-a-matrix",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#converting-odmatrix-data-frame-in-a-matrix",
-    "title": "In-class_Ex07",
-    "section": "Converting ODMatrix data frame in a matrix",
-    "text": "Converting ODMatrix data frame in a matrix\n\ndistmat &lt;- ODMatrix %&gt;%\n  select(origin_id, destination_id, total_cost) %&gt;%\n  spread(destination_id, total_cost) %&gt;%\n  select(c(-c('origin_id')))\n\ndistmat_km &lt;- as.matrix(distmat/1000)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#two-step-floating-catchment-area",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#two-step-floating-catchment-area",
-    "title": "In-class_Ex07",
-    "section": "Two-Step Floating Catchment Area",
-    "text": "Two-Step Floating Catchment Area\n\ndf_2sfca &lt;- catchment_ratio(\n  consumers = hexagons$demand,\n  providers = eldercare$capacity,\n  cost = distmat_km,\n  max_cost = 5) %&gt;%\n  as.data.frame() %&gt;%\n  rename(\"2SFCA\" = \".\")"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-2sfca",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-2sfca",
-    "title": "In-class_Ex07",
-    "section": "Mapping 2SFCA",
-    "text": "Mapping 2SFCA\n\nhex_2SFCA &lt;- bind_cols(hexagons, df_2sfca) \ntm_shape(hex_2SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"2SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"2SFCA Accessibility measures\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#enhanced-2-step-floating-catchment",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#enhanced-2-step-floating-catchment",
-    "title": "In-class_Ex07",
-    "section": "Enhanced 2-Step Floating Catchment",
-    "text": "Enhanced 2-Step Floating Catchment\n\nstep_weights &lt;- list(c(5, .01), c(4, .05), c(3, .1), c(2, .4), c(1, 1))\ndf_e2sfca &lt;- catchment_ratio(\n  consumers = hexagons$demand,\n  providers = eldercare$capacity,\n  cost = distmat_km,\n  weight = step_weights) %&gt;%\n  as.data.frame() %&gt;%\n  rename(\"E2SFCA\" = \".\")"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-e2sfca",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-e2sfca",
-    "title": "In-class_Ex07",
-    "section": "Mapping E2SFCA",
-    "text": "Mapping E2SFCA\n\nhex_E2SFCA &lt;- bind_cols(hexagons, df_e2sfca) \ntm_shape(hex_E2SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"E2SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"E2SFCA Accessibility measures\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#kernel-density-guassian-2-step-floating-catchment-area",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#kernel-density-guassian-2-step-floating-catchment-area",
-    "title": "In-class_Ex07",
-    "section": "Kernel Density (Guassian) 2-Step Floating Catchment Area",
-    "text": "Kernel Density (Guassian) 2-Step Floating Catchment Area\n\ndf_kd2sfca &lt;- catchment_ratio(\n  consumers = hexagons$demand, \n  providers = eldercare$capacity,\n  cost = distmat_km,\n  weight = \"gaussian\") %&gt;%\n  as.data.frame() %&gt;%\n  rename(\"KD2SFCA\" = \".\")"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-kd2sfca",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-kd2sfca",
-    "title": "In-class_Ex07",
-    "section": "Mapping KD2SFCA",
-    "text": "Mapping KD2SFCA\n\nhex_KD2SFCA &lt;- bind_cols(hexagons, df_kd2sfca) \ntm_shape(hex_KD2SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"KD2SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"KDSFCA Accessibility measures\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#step-floating-catchment-area",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#step-floating-catchment-area",
-    "title": "In-class_Ex07",
-    "section": "3-Step Floating Catchment Area",
-    "text": "3-Step Floating Catchment Area\n\ndf_3sfca &lt;- catchment_ratio(\n  consumers = hexagons$demand, \n  providers = eldercare$capacity,\n  cost = distmat_km,\n  step_weights, \n  normalize_weight = TRUE) %&gt;%\n  as.data.frame() %&gt;%\n  rename(\"3SFCA\" = \".\")\n\n\nhex_3SFCA &lt;- bind_cols(hexagons, df_3sfca) \ntm_shape(hex_3SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"3SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"3SFCA Accessibility measures\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#modified-2-step-floating-catchment-area",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#modified-2-step-floating-catchment-area",
-    "title": "In-class_Ex07",
-    "section": "Modified 2-Step Floating Catchment Area",
-    "text": "Modified 2-Step Floating Catchment Area\n\ndf_m2sfca &lt;- catchment_ratio(\n  consumers = hexagons$demand, \n  providers = eldercare$capacity,\n  cost = distmat_km,\n  step_weights, \n  adjust_providers = function(w) w^2) %&gt;%\n  as.data.frame() %&gt;%\n  rename(\"M2SFCA\" = \".\")\n\n\nhex_M2SFCA &lt;- bind_cols(hexagons, df_m2sfca) \ntm_shape(hex_M2SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"M2SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"M2SFCA Accessibility measures\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
   }
 ]
