@@ -24,7 +24,7 @@ website:
         - text: Exercise 7
           href: Hands_on_Ex/Hands_onEx07/hands_on_ex07.html
         - text: Exercise 8
-          href: Hands_on_Ex/Hands_onEx07/hands_on_ex08.html
+          href: Hands_on_Ex/Hands_onEx08/hands_on_ex08.html
       - text: Take-home Exercise
         menu:
         - text: "Exercise 1: Executive Summary"
@@ -35,6 +35,10 @@ website:
           href: Take_Home_Ex/Take_HomeEx02/take_home_ex02-summary.html
         - text: "Exercise 2: Technical Report"
           href: Take_Home_Ex/Take_HomeEx02/take_home_ex02.html
+        - text: "Exercise 3: Executive Summary"
+          href: Take_Home_Ex/Take_HomeEx03/take_home_ex03-summary.html
+        - text: "Exercise 3: Technical Report"
+          href: Take_Home_Ex/Take_HomeEx03/take_home_ex03.html
       - text: In-class Exercise
         menu:
         - text: Exercise 4
