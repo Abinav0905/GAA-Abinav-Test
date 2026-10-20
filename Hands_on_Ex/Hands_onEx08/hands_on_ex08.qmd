@@ -1,0 +1,514 @@
+---
+title: "Market Area Analysis for Retail and Service Locations using Huff model"
+subtitle: "Hands-on Exercise 8"
+date: "today"
+date-modified: last-modified
+format: html
+execute:
+  echo: true
+  eval: true
+  message: false
+  warning: false
+  freeze: true
+editor: visual
+toc: true
+toc-location: right
+---
+
+## Adding Packages
+
+```{r}
+set.seed(1234)
+pacman::p_load(sf, tidyverse, MCI, tmap, ggstatsplot)
+```
+
+## Importing Data
+
+### Importing Geospatial Data
+
+```{r}
+stores <- st_read(
+  dsn = "data/geospatial",
+  layer = "STORES_TC")
+```
+
+```{r}
+town <- st_read(
+  dsn = "data/geospatial",
+  layer = "TOWN_TC")
+```
+
+```{r}
+village <- st_read(
+  dsn = "data/geospatial",
+  layer = "VILLAGE_TC")
+```
+
+Three layers come in here. The stores are points, the towns are the larger boundaries, and the villages are the small areas that act as our customer origins. All three should report the same projected system, TWD97 / TM2 zone 121 (EPSG 3826). Everything that follows is a distance calculation and distances only make sense if every layer uses the same coordinate system.
+
+```{r}
+tmap_mode("view")
+tm_shape(town) +
+  tm_polygons() +
+tm_shape(village) +
+  tm_polygons() + 
+tm_shape(stores) +
+  tm_dots()
+tmap_mode("plot")
+```
+
+A quick look to confirm the three layers line up and that the stores fall inside the city.
+
+### Importing Aspatial Data
+
+```{r}
+pop2019 <- read_csv(
+  "data/aspatial/pop2019.csv")
+```
+
+```{r}
+store_sales <- read_csv(
+  "data/aspatial/Store_sales_data.csv")
+```
+
+```{r}
+summary(store_sales)
+```
+
+The population file has one row per village and the sales file has thousands of rows with many per store, which is why it needs to be summed up before it can be used.
+
+## Data Preparation
+
+### Aggregating Store Sales
+
+```{r}
+store_sales_aggre <- store_sales %>%
+  group_by(`Store Code`) %>%
+  summarise(
+    "Total_Bill" = sum(Bills, na.rm = TRUE),
+    "Total_Sales" = sum(Amount, na.rm = TRUE))
+```
+
+The many sales rows per store are added up so that each store has one row, with its total number of bills and its total sales.
+
+### Relational Join
+
+```{r}
+stores <- stores %>%
+  left_join(store_sales_aggre,
+            by = join_by(
+              Store_CD == `Store Code`)) %>%
+  mutate(Store_size = 100)
+```
+
+```{r}
+summary(stores)
+```
+
+### How Different Are the Stores' Sales?
+
+```{r}
+#| fig-height: 8
+stores %>%
+  st_drop_geometry() %>%
+  ggplot(aes(x = reorder(Store_CD, Total_Sales),
+             y = Total_Sales)) +
+  geom_col(fill = "light blue", color = "black") +
+  coord_flip() +
+  labs(x = "Store", y = "Total sales")
+```
+
+All 28 stores are treated as the same size, but their actual sales are clearly not the same. This ranks the stores by total sales, so we can see how big the gap is between the strongest and the weakest. It also sets up an idea we come back to later, which is using sales instead of a flat 100 to represent how attractive each store is.
+
+### Tidying pop2019 Data Frame
+
+```{r}
+glimpse(pop2019)
+```
+
+```{r}
+glimpse(village)
+```
+
+```{r}
+pop2019 <- pop2019 %>%
+  mutate(V_ID = str_remove_all(
+    V_ID, "-"))
+```
+
+```{r}
+village <- village %>%
+  left_join(pop2019,
+            by = join_by(
+              VILLCODE == V_ID))
+```
+
+We want to attach the population numbers to the village boundaries, but the village codes in the population file have a dash in them while the codes in the boundary file do not. The dash is removed first so the two codes can match, and then the join is done.
+
+### Check for Missing or Zero Values
+
+```{r}
+summary(village)
+```
+
+```{r}
+village <- village %>%
+  filter(!is.na(P_CNT)) 
+```
+
+```{r}
+any(is.na(village$H_CNT))
+any(is.na(village$P_CNT))
+any(is.na(village$M_CNT))
+any(is.na(village$F_CNT))
+```
+
+Five villages have no population record, so their household and population counts came through empty after the join. The Huff calculation cannot work with empty values, so those five are dropped.
+
+## Computing Distance Matrix
+
+```{r}
+village_center <- st_point_on_surface(village)
+```
+
+```{r}
+distmat <- st_distance(village_center, stores)
+```
+
+Rather than measure from the whole village shape, each village is reduced to one point, and the distance is measured from that point to every store. st_point_on_surface() is used instead of a plain centroid because a centroid of an oddly shaped village can land outside it, whereas this function always gives a point that sits inside the village.
+
+```{r}
+rownames(distmat) <- village$`VILLCODE`
+colnames(distmat) <- stores$`Store_CD`
+
+distmat_long <- distmat %>%
+  as.data.frame() %>%
+  rownames_to_column(var = "VILLCODE") %>%
+  pivot_longer(
+    cols = -VILLCODE,
+    names_to = "Store_CD",
+    values_to = "distance"
+  ) %>%
+  mutate(distance = as.numeric(distance))
+```
+
+The distance matrix is a grid with villages down the side and stores across the top. The next step needs a long list instead, with one row for every village and store pair, so the grid is labelled with the village and store codes and then reshaped.
+
+## Preparing Interaction Matrix
+
+```{r}
+interaction_matrix <- distmat_long %>%
+  left_join(
+    stores %>% 
+      st_drop_geometry() %>% 
+      select(Store_CD, Store_size),
+    by = "Store_CD") %>%
+  relocate(
+    distance, .after = last_col())
+```
+
+```{r}
+summary(interaction_matrix)
+```
+
+The MCI package wants one table with four things on every row: the village, the store, how attractive the store is, and how far apart they are. The store size is attached to each pair here. With 617 villages and 28 stores that makes 17,276 rows.
+
+## Computing Huff Model
+
+```{r}
+huff_share <- huff.shares(
+  interaction_matrix, "VILLCODE", "Store_CD", 
+  "Store_size", "distance")
+```
+
+```{r}
+head(huff_share)
+```
+
+```{r}
+huff_share %>%
+  group_by(VILLCODE) %>%
+  summarise(total = sum(p_ij)) %>%
+  summary()
+```
+
+The new column p_ij is the probability that a resident of village i shops at store j. Every village's probabilities across all 28 stores should add up to 1, since a resident has to pick one of them. The last chunk checks that, and the total should come out as 1 for every village.
+
+### How Much Does the Distance Decay Matter?
+
+```{r}
+huff_lambda <- map_dfr(c(-1, -2, -3), function(l) {
+  huff.shares(
+    interaction_matrix, "VILLCODE", "Store_CD",
+    "Store_size", "distance",
+    lambda = l) %>%
+    group_by(VILLCODE) %>%
+    summarise(top_share = max(p_ij)) %>%
+    mutate(lambda = factor(l))
+})
+```
+
+```{r}
+ggplot(data = huff_lambda,
+       aes(x = top_share, fill = lambda)) +
+  geom_density(alpha = 0.4) +
+  labs(x = "Probability of the most likely store",
+       y = "Density",
+       fill = "Lambda")
+```
+
+```{r}
+huff_lambda %>%
+  group_by(lambda) %>%
+  summarise(median_top_share = median(top_share))
+```
+
+The writeup runs the model with the default distance decay (lambda of -2) and never says what that setting does. The more negative lambda is, the harder distance punishes a store. Here the model is run with -1, -2 and -3, and for each village we keep the probability of its single most likely store. If distance matters more, villages should lean harder on their nearest store, so the curve should shift to the right as lambda gets more negative.
+
+### Trade Area Analysis for a Single Store
+
+```{r}
+market_share <- huff_share %>%
+  filter(Store_CD == "BT")
+```
+
+```{r}
+Trade_area <- village %>%
+  left_join(market_share, by = "VILLCODE")
+```
+
+```{r}
+selected_store <- stores %>%
+  filter(Store_CD == "BT")
+```
+
+Store BT is picked out of the 28. Its probabilities are attached to the village boundaries so we can map how likely each village is to shop there.
+
+```{r}
+#| fig-width: 10
+#| fig-height: 8
+tm_shape(Trade_area) +
+  tm_polygons(fill = "p_ij",
+              fill.scale = tm_scale_intervals(
+                style = "quantile", 
+                n = 10,
+                values = "brewer.blues"),
+              fill.legend = tm_legend(
+                title = "Patronage Probability")) +
+  tm_shape(selected_store) +
+    tm_dots(size = 0.3,
+            fill = "red",
+            col = "black") +
+  tm_title("Distribution of Patronage Probability of Store BT by village") +
+  tm_layout(frame = TRUE) +
+  tm_borders(fill_alpha = 0.5) +
+  tm_compass(type="8star", size = 2) +
+  tm_scalebar() +
+  tm_grid(alpha =0.2) 
+```
+
+The darkest villages are the ones most likely to shop at BT, and they cluster around the red dot. The colour fades with distance, and it also fades faster wherever other stores are closer, because the competition takes away customers.
+
+### Trade Areas of the Best and Worst Selling Stores
+
+```{r}
+store_rank <- stores %>%
+  st_drop_geometry() %>%
+  arrange(desc(Total_Sales))
+
+top_store <- store_rank$Store_CD[1]
+bottom_store <- store_rank$Store_CD[nrow(store_rank)]
+```
+
+```{r}
+map_trade_area <- function(store_code) {
+  ta <- village %>%
+    left_join(huff_share %>% filter(Store_CD == store_code),
+              by = "VILLCODE")
+  st <- stores %>% filter(Store_CD == store_code)
+  
+  tm_shape(ta) +
+    tm_polygons(fill = "p_ij",
+                fill.scale = tm_scale_intervals(
+                  style = "quantile",
+                  n = 10,
+                  values = "brewer.blues"),
+                fill.legend = tm_legend(
+                  title = "Patronage Probability")) +
+    tm_shape(st) +
+    tm_dots(size = 0.3,
+            fill = "red",
+            col = "black") +
+    tm_title(paste("Trade area of store", store_code)) +
+    tm_layout(frame = TRUE)
+}
+```
+
+```{r}
+#| fig-width: 14
+#| fig-height: 7
+tmap_arrange(map_trade_area(top_store),
+             map_trade_area(bottom_store),
+             ncol = 2)
+```
+
+Store BT was picked at random, so here are the same trade area maps for the best selling store on the left and the worst selling store on the right. Both are modelled as the same size, so any difference between the two maps comes from where each store sits. A store with lots of competitors nearby gets a smaller and paler trade area. This lets us see whether location alone seems to explain why one store sells more than the other.
+
+### Store Sales Analysis
+
+```{r}
+huff_share_pp <- huff_share %>%
+  left_join(village %>% 
+      st_drop_geometry() %>% 
+      select(VILLCODE, P_CNT),
+    by = "VILLCODE") %>%
+  relocate(
+    distance, .after = last_col())
+```
+
+```{r}
+huff_total <- shares.total(
+  huff_share_pp, "VILLCODE", "Store_CD",
+  "p_ij", "P_CNT")
+```
+
+```{r}
+store_sales_est <- stores %>%
+  left_join(huff_total,
+            by = join_by(
+              "Store_CD" == "suppliers_single"))
+```
+
+Another use of the Huff model is estimating how much each store should sell. Each village's population is multiplied by its probability of shopping at the store, and those numbers are added up over all villages. The result, sum_E_j, is the model's sales estimate for each store, which we can set against the real sales.
+
+```{r}
+store_sales_nongeom <- store_sales_est %>% 
+  st_drop_geometry()
+```
+
+```{r}
+ggscatterstats(
+  store_sales_nongeom,
+  x = sum_E_j,
+  y = Total_Sales)
+```
+
+The closer the dots sit to the line, the better the model's estimate matches what the stores really sold. The correlation at the top of the plot sums that up in one number. Keep in mind that every store was treated as the same size, so the model only knows about location and competition.
+
+```{r}
+huff_share_wider <- huff_share %>%
+  select(VILLCODE, Store_CD, p_ij) %>%
+    pivot_wider(names_from = Store_CD, 
+                values_from = p_ij)
+```
+
+This reshapes the probabilities into one row per village and one column per store. It is easier to scan, and it could be used for something like grouping villages by their shopping habits.
+
+### What If Store Size Reflects Actual Sales?
+
+```{r}
+interaction_matrix_sales <- distmat_long %>%
+  left_join(
+    stores %>% 
+      st_drop_geometry() %>% 
+      select(Store_CD, Total_Sales),
+    by = "Store_CD") %>%
+  relocate(
+    distance, .after = last_col())
+```
+
+```{r}
+huff_share_sales <- huff.shares(
+  interaction_matrix_sales, "VILLCODE", "Store_CD", 
+  "Total_Sales", "distance")
+```
+
+```{r}
+huff_share_sales_pp <- huff_share_sales %>%
+  left_join(village %>% 
+      st_drop_geometry() %>% 
+      select(VILLCODE, P_CNT),
+    by = "VILLCODE") %>%
+  relocate(distance, .after = last_col())
+```
+
+```{r}
+huff_total_sales <- shares.total(
+  huff_share_sales_pp, "VILLCODE", "Store_CD",
+  "p_ij", "P_CNT")
+```
+
+```{r}
+sales_compare <- store_sales_nongeom %>%
+  select(Store_CD, Total_Sales, sum_E_j) %>%
+  rename(est_equal_size = sum_E_j) %>%
+  left_join(
+    huff_total_sales %>%
+      rename(Store_CD = suppliers_single,
+             est_by_sales = sum_E_j),
+    by = "Store_CD")
+```
+
+```{r}
+sales_compare %>%
+  summarise(
+    equal_size = cor(est_equal_size, Total_Sales),
+    sales_as_size = cor(est_by_sales, Total_Sales))
+```
+
+```{r}
+sales_compare %>%
+  pivot_longer(cols = c(est_equal_size, est_by_sales),
+               names_to = "version",
+               values_to = "estimate") %>%
+  ggplot(aes(x = estimate, y = Total_Sales)) +
+  geom_point() +
+  geom_smooth(method = lm, se = FALSE) +
+  facet_wrap(~ version, scales = "free_x") +
+  labs(x = "Estimated sales (Huff model)",
+       y = "Actual total sales")
+```
+
+Earlier we set every store to a size of 100 because the data has no real store sizes. Here the model is rerun with each store's actual total sales standing in for how attractive it is, and the two versions are compared. This is only half a fair test, because sales are being used to predict sales, so a better match is partly built in. What it shows is how much of the gap in the first model came from treating every store as identical.
+
+### Which Stores Beat the Model?
+
+```{r}
+sales_model <- lm(Total_Sales ~ sum_E_j, 
+                  data = store_sales_nongeom,
+                  na.action = na.exclude)
+```
+
+```{r}
+store_perf <- store_sales_est %>%
+  mutate(residual = residuals(sales_model),
+         performance = factor(
+           ifelse(residual > 0, "Above model", "Below model"),
+           levels = c("Above model", "Below model")))
+```
+
+```{r}
+store_perf %>%
+  st_drop_geometry() %>%
+  select(Store_CD, Store_Name, Total_Sales, sum_E_j, residual) %>%
+  arrange(desc(residual)) %>%
+  slice(c(1:5, (n() - 4):n()))
+```
+
+```{r}
+#| fig-width: 10
+#| fig-height: 8
+tm_shape(town) +
+  tm_polygons(fill = "grey95") +
+tm_shape(store_perf) +
+  tm_dots(fill = "performance",
+          fill.scale = tm_scale_categorical(
+            values = c("blue", "red")),
+          fill.legend = tm_legend(
+            title = "Actual sales vs model"),
+          size = 1) +
+  tm_title("Stores selling above or below the Huff model estimate") +
+  tm_layout(frame = TRUE)
+```
+
+Instead of only asking how well the model fits, this asks which stores do better or worse than it expects. The table lists the top five and bottom five, and the map marks stores that beat the model in blue and stores that fall short in red. A store selling more than its location predicts might have a strong brand or good management, and one selling less might have a problem the map cannot see. Those are the stores worth a closer look.
