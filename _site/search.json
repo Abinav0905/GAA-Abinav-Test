@@ -168,249 +168,137 @@
     "text": "Computing the Huff Model\n\nhuff_share &lt;- huff.shares(\n  interaction_matrix, \"VILLCODE\", \"Store_CD\",\n  \"Store_size\", \"distance\")\n\n\nTrade Area Analysis for a Single Store\n\nmarket_share &lt;- huff_share %&gt;%\n  filter(Store_CD == \"BT\")\n\n\nTrade_area &lt;- village %&gt;%\n  left_join(market_share)\n\n\nselected_store &lt;- stores %&gt;%\n  filter(Store_CD == \"BT\")\n\n\ntm_shape(Trade_area) +\n  tm_polygons(fill = \"p_ij\",\n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"brewer.blues\"),\n              fill.legend = tm_legend(\n                title = \"Patronage Probability\")) +\n  tm_shape(selected_store) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"Distribution of Patronage Probability of Store BT by village\") +\n  tm_layout(frame = TRUE) +\n  tm_borders(fill_alpha = 0.5) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha =0.2)\n\n\n\n\n\n\n\n\nStore Sales Analysis\n\nhuff_share_pp &lt;- huff_share %&gt;%\n  left_join(village %&gt;%\n              st_drop_geometry() %&gt;%\n              select(VILLCODE, P_CNT),\n            by = \"VILLCODE\") %&gt;%\n  relocate(\n    distance, .after = last_col())\n\n\nhuff_total &lt;- shares.total(\n  huff_share_pp, \"VILLCODE\", \"Store_CD\",\n  \"p_ij\", \"P_CNT\")\n\n\nstore_sales_est &lt;- stores %&gt;%\n  left_join(huff_total,\n            by = join_by(\n              \"Store_CD\" == \"suppliers_single\"))\n\n\nstore_sales_nongeom &lt;- store_sales_est %&gt;%\n  st_drop_geometry()\n\nggscatterstats(\n  store_sales_nongeom,\n  x = sum_E_j,\n  y = Total_Sales)\n\n\n\n\n\n\n\n\n\n\nReshaping the Market Shares\n\nhuff_share_wider &lt;- huff_share %&gt;%\n  select(VILLCODE, Store_CD, p_ij) %&gt;%\n  pivot_wider(names_from = Store_CD,\n              values_from = p_ij)\n\n\nhuff_TA &lt;- huff_share_wider %&gt;%\n  mutate(\n    TA = names(pick(2:29))[\n      max.col(pick(2:29),\n              ties.method = \"first\")\n    ]\n  )\n\n\nhuff_TA_tidified &lt;- huff_TA %&gt;%\n  select(VILLCODE, TA)\n\nvillage_TA &lt;- village %&gt;%\n  left_join(huff_TA_tidified,\n            by = join_by(VILLCODE))\n\n\ntm_shape(village_TA) +\n  tm_polygons(fill = \"TA\",\n              fill.scale = tm_scale_categorical(values = \"poly.glasbey\"),\n              fill.legend = tm_legend(title = \"Trade area (store)\"),\n              col = \"white\",\n              lwd = 0.2) +\n  tm_shape(stores) +\n  tm_dots(size = 0.4, fill = \"black\") +\n  tm_text(\"Store_CD\", size = 0.6, ymod = 0.7) +\n  tm_title(\"Trade areas: the most likely store for each village\")"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex08/data/geospatial/TOWN_TC.html",
-    "href": "In_Class_Ex/In_Class_Ex08/data/geospatial/TOWN_TC.html",
-    "title": "GAA-Abinav-Test",
+    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html",
+    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html",
+    "title": "In-class_Ex06",
     "section": "",
-    "text": "&lt;!DOCTYPE qgis PUBLIC ‘http://mrcc.com/qgis.dtd’ ‘SYSTEM’&gt;     dataset\n\n\n       GEOGCRS[“TWD97”,DATUM[“Taiwan Datum 1997”,ELLIPSOID[“GRS 1980”,6378137,298.257222101,LENGTHUNIT[“metre”,1]]],PRIMEM[“Greenwich”,0,ANGLEUNIT[“degree”,0.0174532925199433]],CS[ellipsoidal,2],AXIS[“geodetic latitude (Lat)”,north,ORDER[1],ANGLEUNIT[“degree”,0.0174532925199433]],AXIS[“geodetic longitude (Lon)”,east,ORDER[2],ANGLEUNIT[“degree”,0.0174532925199433]],USAGE[SCOPE[“Horizontal component of 3D system.”],AREA[“Taiwan, Republic of China - onshore and offshore - Taiwan Island, Penghu (Pescadores) Islands.”],BBOX[17.36,114.32,26.96,123.61]],ID[“EPSG”,3824]] +proj=longlat +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +no_defs 27230 3824 EPSG:3824 TWD97 longlat EPSG:7019 true"
+    "text": "pacman::p_load(sf, sfdep, tmap, \n               plotly, tidyverse, \n               Kendall)"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html",
-    "title": "In-class_Ex07",
+    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#installing-and-loading-the-r-packages",
+    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#installing-and-loading-the-r-packages",
+    "title": "In-class_Ex06",
     "section": "",
-    "text": "if (!requireNamespace(\"catchment\", quietly = TRUE)) {\n  remotes::install_github(\"uva-bi-sdad/catchment\")\n}\nlibrary(catchment)\n\n\npacman::p_load(sf, tidyverse, tmap, accessibility, catchment)"
+    "text": "pacman::p_load(sf, sfdep, tmap, \n               plotly, tidyverse, \n               Kendall)"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#loading-r-package",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#loading-r-package",
-    "title": "In-class_Ex07",
-    "section": "",
-    "text": "if (!requireNamespace(\"catchment\", quietly = TRUE)) {\n  remotes::install_github(\"uva-bi-sdad/catchment\")\n}\nlibrary(catchment)\n\n\npacman::p_load(sf, tidyverse, tmap, accessibility, catchment)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#importing-geospatial-data",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#importing-geospatial-data",
-    "title": "In-class_Ex07",
-    "section": "Importing Geospatial data",
-    "text": "Importing Geospatial data\n\nmpsz &lt;- st_read(dsn = \"data/geospatial\", \n                layer = \"MP14_SUBZONE_NO_SEA_PL\") %&gt;%\n  st_transform(crs = 3414)\n\nReading layer `MP14_SUBZONE_NO_SEA_PL' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex07\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 323 features and 15 fields\nGeometry type: MULTIPOLYGON\nDimension:     XY\nBounding box:  xmin: 2667.538 ymin: 15748.72 xmax: 56396.44 ymax: 50256.33\nProjected CRS: SVY21\n\n\n\nhexagons &lt;- st_read(dsn = \"data/geospatial\", \n                    layer = \"hexagons\") %&gt;%\n  st_transform(crs = 3414)\n\nReading layer `hexagons' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex07\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 3125 features and 6 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 2667.538 ymin: 21506.33 xmax: 50010.26 ymax: 50256.33\nProjected CRS: SVY21 / Singapore TM\n\n\n\neldercare &lt;- st_read(dsn = \"data/geospatial\", \n                     layer = \"ELDERCARE\") %&gt;%\n  st_transform(crs = 3414)\n\nReading layer `ELDERCARE' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex07\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 120 features and 19 fields\nGeometry type: POINT\nDimension:     XY\nBounding box:  xmin: 14481.92 ymin: 28218.43 xmax: 41665.14 ymax: 46804.9\nProjected CRS: SVY21 / Singapore TM\n\n\n\nODMatrix &lt;- read_csv(\"data/aspatial/OD_Matrix.csv\", skip = 0)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#geospatial-preparation",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#geospatial-preparation",
-    "title": "In-class_Ex07",
-    "section": "Geospatial Preparation",
-    "text": "Geospatial Preparation\n\nhexagons &lt;- hexagons %&gt;%\n  select(fid) %&gt;%\n  mutate(demand = 100) %&gt;%\n  rename(id = fid)\n\n\neldercare &lt;- eldercare %&gt;%\n  select(fid) %&gt;%\n  mutate(capacity = 100)\n\n\nODMatrix_tidied &lt;- ODMatrix %&gt;%\n  select(origin_id, destination_id, total_cost) %&gt;%\n  rename(from_id = origin_id,\n         to_id = destination_id,\n         dist = total_cost)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#computing-minimum-travel-distance-to-nearest-oldercare",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#computing-minimum-travel-distance-to-nearest-oldercare",
-    "title": "In-class_Ex07",
-    "section": "Computing Minimum Travel Distance to nearest oldercare",
-    "text": "Computing Minimum Travel Distance to nearest oldercare\n\ndist2closest &lt;- cost_to_closest(\n  travel_matrix = ODMatrix_tidied,\n  land_use_data = hexagons,\n  opportunity = \"demand\",\n  travel_cost = \"dist\",\n  n = 1,\n  group_by = character(0),\n  active = TRUE,\n  fill_missing_ids = TRUE\n)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#joining-output",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#joining-output",
-    "title": "In-class_Ex07",
-    "section": "Joining output",
-    "text": "Joining output\n\nhex_acc &lt;- hexagons %&gt;%\n  left_join(dist2closest) %&gt;%\n  rename(dist2closest = dist)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-closest-distance",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-closest-distance",
-    "title": "In-class_Ex07",
-    "section": "Mapping closest distance",
-    "text": "Mapping closest distance\n\nmapex &lt;- st_bbox(hex_acc)\ntm_shape(hex_acc,\n         bbox = mapex) + \n  tm_polygons(fill = \"dist2closest\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"Accessibility to the closest eldercare\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#converting-odmatrix-data-frame-in-a-matrix",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#converting-odmatrix-data-frame-in-a-matrix",
-    "title": "In-class_Ex07",
-    "section": "Converting ODMatrix data frame in a matrix",
-    "text": "Converting ODMatrix data frame in a matrix\n\ndistmat &lt;- ODMatrix %&gt;%\n  select(origin_id, destination_id, total_cost) %&gt;%\n  spread(destination_id, total_cost) %&gt;%\n  select(c(-c('origin_id')))\n\ndistmat_km &lt;- as.matrix(distmat/1000)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#two-step-floating-catchment-area",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#two-step-floating-catchment-area",
-    "title": "In-class_Ex07",
-    "section": "Two-Step Floating Catchment Area",
-    "text": "Two-Step Floating Catchment Area\n\ndf_2sfca &lt;- catchment_ratio(\n  consumers = hexagons$demand,\n  providers = eldercare$capacity,\n  cost = distmat_km,\n  max_cost = 5) %&gt;%\n  as.data.frame() %&gt;%\n  rename(\"2SFCA\" = \".\")"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-2sfca",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-2sfca",
-    "title": "In-class_Ex07",
-    "section": "Mapping 2SFCA",
-    "text": "Mapping 2SFCA\n\nhex_2SFCA &lt;- bind_cols(hexagons, df_2sfca) \ntm_shape(hex_2SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"2SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"2SFCA Accessibility measures\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#enhanced-2-step-floating-catchment",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#enhanced-2-step-floating-catchment",
-    "title": "In-class_Ex07",
-    "section": "Enhanced 2-Step Floating Catchment",
-    "text": "Enhanced 2-Step Floating Catchment\n\nstep_weights &lt;- list(c(5, .01), c(4, .05), c(3, .1), c(2, .4), c(1, 1))\ndf_e2sfca &lt;- catchment_ratio(\n  consumers = hexagons$demand,\n  providers = eldercare$capacity,\n  cost = distmat_km,\n  weight = step_weights) %&gt;%\n  as.data.frame() %&gt;%\n  rename(\"E2SFCA\" = \".\")"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-e2sfca",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-e2sfca",
-    "title": "In-class_Ex07",
-    "section": "Mapping E2SFCA",
-    "text": "Mapping E2SFCA\n\nhex_E2SFCA &lt;- bind_cols(hexagons, df_e2sfca) \ntm_shape(hex_E2SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"E2SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"E2SFCA Accessibility measures\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#kernel-density-guassian-2-step-floating-catchment-area",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#kernel-density-guassian-2-step-floating-catchment-area",
-    "title": "In-class_Ex07",
-    "section": "Kernel Density (Guassian) 2-Step Floating Catchment Area",
-    "text": "Kernel Density (Guassian) 2-Step Floating Catchment Area\n\ndf_kd2sfca &lt;- catchment_ratio(\n  consumers = hexagons$demand, \n  providers = eldercare$capacity,\n  cost = distmat_km,\n  weight = \"gaussian\") %&gt;%\n  as.data.frame() %&gt;%\n  rename(\"KD2SFCA\" = \".\")"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-kd2sfca",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-kd2sfca",
-    "title": "In-class_Ex07",
-    "section": "Mapping KD2SFCA",
-    "text": "Mapping KD2SFCA\n\nhex_KD2SFCA &lt;- bind_cols(hexagons, df_kd2sfca) \ntm_shape(hex_KD2SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"KD2SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"KDSFCA Accessibility measures\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#step-floating-catchment-area",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#step-floating-catchment-area",
-    "title": "In-class_Ex07",
-    "section": "3-Step Floating Catchment Area",
-    "text": "3-Step Floating Catchment Area\n\ndf_3sfca &lt;- catchment_ratio(\n  consumers = hexagons$demand, \n  providers = eldercare$capacity,\n  cost = distmat_km,\n  step_weights, \n  normalize_weight = TRUE) %&gt;%\n  as.data.frame() %&gt;%\n  rename(\"3SFCA\" = \".\")\n\n\nhex_3SFCA &lt;- bind_cols(hexagons, df_3sfca) \ntm_shape(hex_3SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"3SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"3SFCA Accessibility measures\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#modified-2-step-floating-catchment-area",
-    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#modified-2-step-floating-catchment-area",
-    "title": "In-class_Ex07",
-    "section": "Modified 2-Step Floating Catchment Area",
-    "text": "Modified 2-Step Floating Catchment Area\n\ndf_m2sfca &lt;- catchment_ratio(\n  consumers = hexagons$demand, \n  providers = eldercare$capacity,\n  cost = distmat_km,\n  step_weights, \n  adjust_providers = function(w) w^2) %&gt;%\n  as.data.frame() %&gt;%\n  rename(\"M2SFCA\" = \".\")\n\n\nhex_M2SFCA &lt;- bind_cols(hexagons, df_m2sfca) \ntm_shape(hex_M2SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"M2SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"M2SFCA Accessibility measures\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html",
-    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html",
-    "title": "In-class_Ex05",
-    "section": "",
-    "text": "pacman::p_load(sf, sfdep, tmap, tidyverse)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#installing-and-loading-the-r-packages",
-    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#installing-and-loading-the-r-packages",
-    "title": "In-class_Ex05",
-    "section": "",
-    "text": "pacman::p_load(sf, sfdep, tmap, tidyverse)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#import-shapefile-into-r-environment",
-    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#import-shapefile-into-r-environment",
-    "title": "In-class_Ex05",
+    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#import-shapefile-into-r-environment",
+    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#import-shapefile-into-r-environment",
+    "title": "In-class_Ex06",
     "section": "Import Shapefile into R Environment",
-    "text": "Import Shapefile into R Environment\n\nhunan &lt;- st_read(dsn = \"data/geospatial\", \n                 layer = \"Hunan\")\n\nReading layer `Hunan' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex05\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 88 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 108.7831 ymin: 24.6342 xmax: 114.2544 ymax: 30.12812\nGeodetic CRS:  WGS 84"
+    "text": "Import Shapefile into R Environment\n\nhunan &lt;- st_read(dsn = \"data/geospatial\", \n                 layer = \"Hunan\")  %&gt;% \n  st_transform(crs = 32650)\n\nReading layer `Hunan' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex06\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 88 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 108.7831 ymin: 24.6342 xmax: 114.2544 ymax: 30.12812\nGeodetic CRS:  WGS 84"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#import-csv-file-into-r-environment",
-    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#import-csv-file-into-r-environment",
-    "title": "In-class_Ex05",
-    "section": "Import CSV File into R Environment",
-    "text": "Import CSV File into R Environment\n\nhunan2012 &lt;- read_csv(\"data/aspatial/Hunan_2012.csv\")"
+    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#import-attribute-table",
+    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#import-attribute-table",
+    "title": "In-class_Ex06",
+    "section": "Import Attribute table",
+    "text": "Import Attribute table\n\nGDPPC &lt;- read_csv(\n  \"data/aspatial/Hunan_GDPPC.csv\")"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#performing-relational-join",
-    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#performing-relational-join",
-    "title": "In-class_Ex05",
-    "section": "Performing Relational Join",
-    "text": "Performing Relational Join\n\nhunan_GDPPC &lt;- hunan %&gt;%\n  left_join(hunan2012) %&gt;%\n  select(1:4, 7, 15, 33)"
+    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#creating-time-series-cube",
+    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#creating-time-series-cube",
+    "title": "In-class_Ex06",
+    "section": "Creating Time Series Cube",
+    "text": "Creating Time Series Cube\n\nGDPPC_st &lt;- spacetime(GDPPC, hunan,\n                      .loc_col = \"County\",\n                      .time_col = \"Year\")\n\n\nis_spacetime_cube(GDPPC_st)\n\n[1] TRUE"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#global-measures-of-spatial-association",
-    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#global-measures-of-spatial-association",
-    "title": "In-class_Ex05",
-    "section": "Global Measures of Spatial Association",
-    "text": "Global Measures of Spatial Association\n\nStep 1: Deriving Queen’s contiguity weights: sfdep methods\n\nwm_q &lt;- hunan_GDPPC %&gt;%\n  mutate(nb = st_contiguity(geometry),\n         wt = st_weights(nb,\n                         style = \"W\"),\n         .before = 1)\n\n\n\nStep 2: Computing Global Moran’I\n\nmoranI &lt;- global_moran(wm_q$GDPPC,\n                       wm_q$nb,\n                       wm_q$wt)\nglimpse(moranI)\n\nList of 2\n $ I: num 0.301\n $ K: num 7.64\n\n\n##Performing Global Moran’I permutation test\n\nset.seed(!234) \n\nglobal_moran_perm (wm_q$GDPPC, \n                   wm_q$nb,\n                   wm_q$wt,\n                   nsim = 99)\n\n\n    Monte-Carlo simulation of Moran I\n\ndata:  x \nweights: listw  \nnumber of simulations + 1: 100 \n\nstatistic = 0.30075, observed rank = 100, p-value &lt; 2.2e-16\nalternative hypothesis: two.sided"
+    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#computing-gi",
+    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#computing-gi",
+    "title": "In-class_Ex06",
+    "section": "Computing Gi*",
+    "text": "Computing Gi*\n\nDerive the spatial weights\n\nGDPPC_nb &lt;- GDPPC_st %&gt;%\n  activate(\"geometry\") %&gt;%\n  mutate(nb = include_self(\n    st_contiguity(geometry)),\n    wt = st_inverse_distance(nb, \n                             geometry, \n                             scale = 1,\n                             alpha = 1),\n    .before = 1) %&gt;%\n  set_nbs(\"nb\") %&gt;%\n  set_wts(\"wt\")"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#computing-local-morans-i",
-    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#computing-local-morans-i",
-    "title": "In-class_Ex05",
-    "section": "Computing local Moran’s I",
-    "text": "Computing local Moran’s I\n\nlisa &lt;- wm_q %&gt;%\n  mutate(local_moran = local_moran(\n    GDPPC, nb, wt, nsim = 99),\n    .before = 1) %&gt;%\n  unnest(local_moran)"
+    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#computing-gi-1",
+    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#computing-gi-1",
+    "title": "In-class_Ex06",
+    "section": "Computing Gi*",
+    "text": "Computing Gi*\n\ngi_stars &lt;- GDPPC_nb %&gt;% \n  group_by(Year) %&gt;% \n  mutate(gi_star = local_gstar_perm(\n    GDPPC, nb, wt)) %&gt;% \n  tidyr::unnest(gi_star)"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#plotting-lisa-map",
-    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#plotting-lisa-map",
-    "title": "In-class_Ex05",
-    "section": "Plotting LISA map",
-    "text": "Plotting LISA map\n\nlisa_sig &lt;- lisa %&gt;%\n  filter(p_ii_sim &lt; 0.05)\ntmap_mode(\"plot\")\ntm_shape(lisa) + \n  tm_polygons() +\n  tm_borders(fill_alpha = 0.5) +\ntm_shape(lisa_sig) + \n  tm_polygons(fill = \"mean\", \n              fill.legend = tm_legend(\n                text.size = 1.15,\n                width = 6)) +\n  tm_borders(fill_alpha = 0.4) + \n  tm_layout(legend.title.size = 1.25)"
+    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#mann-kendall-test",
+    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#mann-kendall-test",
+    "title": "In-class_Ex06",
+    "section": "Mann-Kendall Test",
+    "text": "Mann-Kendall Test\n\nMann-Kendall Test on Gi\n\ncbg &lt;- gi_stars %&gt;% \n  ungroup() %&gt;% \n  filter(County == \"Changsha\") |&gt; \n  select(County, Year, gi_star)\n\n\nggplot(data = cbg, \n       aes(x = Year, \n           y = gi_star)) +\n  geom_line() +\n  theme_light()\n\n\n\n\n\n\n\n\n\n\nInteractive Mann-Kendall Plot\n\np &lt;- ggplot(data = cbg, \n       aes(x = Year, \n           y = gi_star)) +\n  geom_line() +\n  theme_light()\n\nggplotly(p)\n\n\n\n\n\n\n\nPrinting Mann-Kendall test report\n\ncbg %&gt;%\n  summarise(mk = list(\n    unclass(\n      Kendall::MannKendall(gi_star)))) %&gt;% \n  tidyr::unnest_wider(mk)\n\n# A tibble: 1 × 5\n    tau      sl     S     D  varS\n  &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;\n1 0.485 0.00742    66  136.  589.\n\n\n\n\nMann-Kendall test data.frame\n\nehsa &lt;- gi_stars %&gt;%\n  group_by(County) %&gt;%\n  summarise(mk = list(\n    unclass(\n      Kendall::MannKendall(gi_star)))) %&gt;%\n  tidyr::unnest_wider(mk)\nhead(ehsa)\n\n# A tibble: 6 × 6\n  County        tau        sl     S     D  varS\n  &lt;chr&gt;       &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;\n1 Anhua      0.191  0.303        26  136.  589.\n2 Anren     -0.294  0.108       -40  136.  589.\n3 Anxiang    0      1             0  136.  589.\n4 Baojing   -0.691  0.000128    -94  136.  589.\n5 Chaling   -0.0882 0.650       -12  136.  589.\n6 Changning -0.750  0.0000318  -102  136.  589.\n\n\n\nemerging &lt;- ehsa %&gt;% \n  arrange(sl, abs(tau)) %&gt;% \n  slice(1:10)\nhead(emerging)\n\n# A tibble: 6 × 6\n  County        tau         sl     S     D  varS\n  &lt;chr&gt;       &lt;dbl&gt;      &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;\n1 Shuangfeng  0.868 0.00000143   118  136.  589.\n2 Xiangtan    0.868 0.00000143   118  136.  589.\n3 Xiangxiang  0.868 0.00000143   118  136.  589.\n4 Chengbu    -0.824 0.00000482  -112  136.  589.\n5 Dongan     -0.824 0.00000482  -112  136.  589.\n6 Wugang     -0.809 0.00000712  -110  136.  589."
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#visualizing-p-value-of-local",
-    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#visualizing-p-value-of-local",
-    "title": "In-class_Ex05",
-    "section": "Visualizing p-value of local",
-    "text": "Visualizing p-value of local"
+    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#performing-emerging-hotspot-analysis",
+    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#performing-emerging-hotspot-analysis",
+    "title": "In-class_Ex06",
+    "section": "Performing Emerging Hotspot Analysis",
+    "text": "Performing Emerging Hotspot Analysis\n\nehsa &lt;- emerging_hotspot_analysis(\n  x = GDPPC_st, \n  .var = \"GDPPC\", \n  k = 1, \n  nsim = 99\n)\n\n\nVisualising the distribution of EHSA classes\n\nggplot(data = ehsa,\n       aes(x = classification)) +\n  geom_bar()\n\n\n\n\n\n\n\n\n\n\nVisualizing EHSA\n\nhunan_ehsa &lt;- hunan %&gt;%\n  left_join(ehsa,\n            by = join_by(County == location))\n\n\nehsa_sig &lt;- hunan_ehsa  %&gt;%\n  filter(p_value &lt; 0.05)\ntmap_mode(\"plot\")\ntm_shape(hunan_ehsa) +\n  tm_polygons() +\n  tm_borders(fill_alpha = 0.5) +\ntm_shape(ehsa_sig) +\n  tm_fill(\"classification\") + \n  tm_borders(fill_alpha = 0.4)"
   },
   {
-    "objectID": "index.html#mapping-the-world-one-exercise-at-a-time",
-    "href": "index.html#mapping-the-world-one-exercise-at-a-time",
-    "title": "Home",
-    "section": "Mapping the world, one exercise at a time",
-    "text": "Mapping the world, one exercise at a time\n\nHands-on exercises, in-class work and take-home projects from my Geospatial Analysis module at SMU. Written in R, rendered with Quarto. Use the tabs above to explore.\n\nAbout me\n\n1.2966° N, 103.8502° E · Singapore Management University"
-  },
-  {
-    "objectID": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html",
-    "href": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html",
-    "title": "Market Area Analysis for Retail and Service Locations using Huff model",
+    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html",
+    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html",
+    "title": "In-class_Ex04",
     "section": "",
-    "text": "set.seed(1234)\npacman::p_load(sf, tidyverse, MCI, tmap, ggstatsplot)"
+    "text": "pacman::p_load(sf, ggstatsplot, tmap, tidyverse, knitr, GWmodel)"
   },
   {
-    "objectID": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#adding-packages",
-    "href": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#adding-packages",
-    "title": "Market Area Analysis for Retail and Service Locations using Huff model",
+    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#the-code",
+    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#the-code",
+    "title": "In-class_Ex04",
     "section": "",
-    "text": "set.seed(1234)\npacman::p_load(sf, tidyverse, MCI, tmap, ggstatsplot)"
+    "text": "pacman::p_load(sf, ggstatsplot, tmap, tidyverse, knitr, GWmodel)"
   },
   {
-    "objectID": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#importing-data",
-    "href": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#importing-data",
-    "title": "Market Area Analysis for Retail and Service Locations using Huff model",
-    "section": "Importing Data",
-    "text": "Importing Data\n\nImporting Geospatial Data\n\nstores &lt;- st_read(\n  dsn = \"data/geospatial\",\n  layer = \"STORES_TC\")\n\nReading layer `STORES_TC' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\Hands_on_Ex\\Hands_onEx08\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 28 features and 3 fields\nGeometry type: POINT\nDimension:     XY\nBounding box:  xmin: 202702.9 ymin: 2662196 xmax: 232773.2 ymax: 2693557\nProjected CRS: TWD97 / TM2 zone 121\n\n\n\ntown &lt;- st_read(\n  dsn = \"data/geospatial\",\n  layer = \"TOWN_TC\")\n\nReading layer `TOWN_TC' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\Hands_on_Ex\\Hands_onEx08\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 28 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 194797.1 ymin: 2654887 xmax: 240450.2 ymax: 2703838\nProjected CRS: TWD97 / TM2 zone 121\n\n\n\nvillage &lt;- st_read(\n  dsn = \"data/geospatial\",\n  layer = \"VILLAGE_TC\")\n\nReading layer `VILLAGE_TC' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\Hands_on_Ex\\Hands_onEx08\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 622 features and 10 fields\nGeometry type: MULTIPOLYGON\nDimension:     XY\nBounding box:  xmin: 194797.1 ymin: 2654887 xmax: 240450.2 ymax: 2703838\nProjected CRS: TWD97 / TM2 zone 121\n\n\nThree layers come in here. The stores are points, the towns are the larger boundaries, and the villages are the small areas that act as our customer origins. All three should report the same projected system, TWD97 / TM2 zone 121 (EPSG 3826). Everything that follows is a distance calculation and distances only make sense if every layer uses the same coordinate system.\n\ntmap_mode(\"view\")\ntm_shape(town) +\n  tm_polygons() +\ntm_shape(village) +\n  tm_polygons() + \ntm_shape(stores) +\n  tm_dots()\n\n\n\n\ntmap_mode(\"plot\")\n\nA quick look to confirm the three layers line up and that the stores fall inside the city.\n\n\nImporting Aspatial Data\n\npop2019 &lt;- read_csv(\n  \"data/aspatial/pop2019.csv\")\n\n\nstore_sales &lt;- read_csv(\n  \"data/aspatial/Store_sales_data.csv\")\n\n\nsummary(store_sales)\n\n     Store Code        POD code        Bills            Amount       \n Length   :5499   Length   :5499   Min.   :   1.0   Min.   :      0  \n N.unique : 233   N.unique : 322   1st Qu.:  37.0   1st Qu.:  26703  \n N.blank  :   0   N.blank  :   0   Median : 186.0   Median : 139643  \n Min.nchar:   2   Min.nchar:   1   Mean   : 331.9   Mean   : 236787  \n Max.nchar:   2   Max.nchar:   6   3rd Qu.: 457.0   3rd Qu.: 331952  \n NAs      :  29                    Max.   :7764.0   Max.   :6076060  \n    Ave Bill      \n Min.   :    0.0  \n 1st Qu.:  661.3  \n Median :  730.5  \n Mean   :  825.1  \n 3rd Qu.:  862.2  \n Max.   :24356.0  \n\n\nThe population file has one row per village and the sales file has thousands of rows with many per store, which is why it needs to be summed up before it can be used."
+    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#preparing-the-data",
+    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#preparing-the-data",
+    "title": "In-class_Ex04",
+    "section": "Preparing the Data",
+    "text": "Preparing the Data\n\nImporting Hunan shapefile\n\nhunan_sf &lt;- st_read(dsn = \"data/geospatial\", layer = \"Hunan\")\n\nReading layer `Hunan' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex04\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 88 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 108.7831 ymin: 24.6342 xmax: 114.2544 ymax: 30.12812\nGeodetic CRS:  WGS 84\n\n\n\n\nimporting Hunan_2012 table\n\nhunan2012 &lt;- read_csv(\"data/aspatial/Hunan_2012.csv\")\n\n\n\nJoining Hunan and Hunan_2012\n\nhunan_sf &lt;- left_join(hunan_sf, hunan2012) %&gt;%\n  select(1:3, 7, 15, 16, 31, 32)"
   },
   {
-    "objectID": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#data-preparation",
-    "href": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#data-preparation",
-    "title": "Market Area Analysis for Retail and Service Locations using Huff model",
-    "section": "Data Preparation",
-    "text": "Data Preparation\n\nAggregating Store Sales\n\nstore_sales_aggre &lt;- store_sales %&gt;%\n  group_by(`Store Code`) %&gt;%\n  summarise(\n    \"Total_Bill\" = sum(Bills, na.rm = TRUE),\n    \"Total_Sales\" = sum(Amount, na.rm = TRUE))\n\nThe many sales rows per store are added up so that each store has one row, with its total number of bills and its total sales.\n\n\nRelational Join\n\nstores &lt;- stores %&gt;%\n  left_join(store_sales_aggre,\n            by = join_by(\n              Store_CD == `Store Code`)) %&gt;%\n  mutate(Store_size = 100)\n\n\nsummary(stores)\n\n     Store_Name     Store_Addr       Store_CD    Total_Bill   \n Length   :28   Length   : 28   Length   :28   Min.   : 1767  \n N.unique :28   N.unique : 28   N.unique :28   1st Qu.: 5698  \n N.blank  : 0   N.blank  :  0   N.blank  : 0   Median : 8634  \n Min.nchar: 2   Min.nchar: 43   Min.nchar: 2   Mean   : 8021  \n Max.nchar:28   Max.nchar:100   Max.nchar: 2   3rd Qu.:10349  \n                                               Max.   :14468  \n  Total_Sales               geometry    Store_size \n Min.   :1475963   POINT        :28   Min.   :100  \n 1st Qu.:4044821   epsg:3826    : 0   1st Qu.:100  \n Median :6116336   +proj=tmer...: 0   Median :100  \n Mean   :5542852                      Mean   :100  \n 3rd Qu.:6959911                      3rd Qu.:100  \n Max.   :8234234                      Max.   :100  \n\n\n\n\nHow Different Are the Stores’ Sales?\n\nstores %&gt;%\n  st_drop_geometry() %&gt;%\n  ggplot(aes(x = reorder(Store_CD, Total_Sales),\n             y = Total_Sales)) +\n  geom_col(fill = \"light blue\", color = \"black\") +\n  coord_flip() +\n  labs(x = \"Store\", y = \"Total sales\")\n\n\n\n\n\n\n\n\nAll 28 stores are treated as the same size, but their actual sales are clearly not the same. This ranks the stores by total sales, so we can see how big the gap is between the strongest and the weakest. It also sets up an idea we come back to later, which is using sales instead of a flat 100 to represent how attractive each store is.\n\n\nTidying pop2019 Data Frame\n\nglimpse(pop2019)\n\nRows: 625\nColumns: 11\n$ COUNTY_ID &lt;dbl&gt; 66000, 66000, 66000, 66000, 66000, 66000, 66000, 66000, 6600…\n$ COUNTY    &lt;chr&gt; \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市…\n$ TOWN_ID   &lt;dbl&gt; 66000110, 66000110, 66000110, 66000110, 66000110, 66000110, …\n$ TOWN      &lt;chr&gt; \"大甲區\", \"大甲區\", \"大甲區\", \"大甲區\", \"大甲區\", \"大甲區\", \"大甲區\", \"大甲區\", \"大甲區…\n$ V_ID      &lt;chr&gt; \"66000110-002\", \"66000110-009\", \"66000110-021\", \"66000110-00…\n$ VILLAGE   &lt;chr&gt; \"大甲里\", \"中山里\", \"太白里\", \"孔門里\", \"文曲里\", \"文武里\", \"日南里\", \"平安里\", \"江南里…\n$ H_CNT     &lt;dbl&gt; 454, 1781, 406, 383, 355, 2071, 2039, 785, 461, 559, 769, 80…\n$ P_CNT     &lt;dbl&gt; 1255, 5252, 1471, 1001, 1264, 6687, 6739, 2642, 1618, 1977, …\n$ M_CNT     &lt;dbl&gt; 626, 2533, 758, 538, 640, 3244, 3406, 1310, 838, 983, 1273, …\n$ F_CNT     &lt;dbl&gt; 629, 2719, 713, 463, 624, 3443, 3333, 1332, 780, 994, 1239, …\n$ INFO_TIME &lt;chr&gt; \"108Y12M\", \"108Y12M\", \"108Y12M\", \"108Y12M\", \"108Y12M\", \"108Y…\n\n\n\nglimpse(village)\n\nRows: 622\nColumns: 11\n$ VILLCODE   &lt;chr&gt; \"66000110029\", \"66000120001\", \"66000120002\", \"66000120003\",…\n$ COUNTYNAME &lt;chr&gt; \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市\", \"臺中…\n$ TOWNNAME   &lt;chr&gt; \"大甲區\", \"清水區\", \"清水區\", \"清水區\", \"清水區\", \"清水區\", \"清水區\", \"清水區\", \"清水…\n$ VILLNAME   &lt;chr&gt; \"建興里\", \"鰲峰里\", \"靈泉里\", \"清水里\", \"文昌里\", \"南寧里\", \"西寧里\", \"北寧里\", \"中興…\n$ VILLENG    &lt;chr&gt; \"Jianxing Vil.\", \"Aofeng Vil.\", \"Lingquan Vil.\", \"Qingshui …\n$ COUNTYID   &lt;chr&gt; \"B\", \"B\", \"B\", \"B\", \"B\", \"B\", \"B\", \"B\", \"B\", \"B\", \"B\", \"B\",…\n$ COUNTYCODE &lt;chr&gt; \"66000\", \"66000\", \"66000\", \"66000\", \"66000\", \"66000\", \"6600…\n$ TOWNID     &lt;chr&gt; \"B11\", \"B12\", \"B12\", \"B12\", \"B12\", \"B12\", \"B12\", \"B12\", \"B1…\n$ TOWNCODE   &lt;chr&gt; \"66000110\", \"66000120\", \"66000120\", \"66000120\", \"66000120\",…\n$ NOTE       &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…\n$ geometry   &lt;MULTIPOLYGON [m]&gt; MULTIPOLYGON (((211953.9 27..., MULTIPOLYGON (…\n\n\n\npop2019 &lt;- pop2019 %&gt;%\n  mutate(V_ID = str_remove_all(\n    V_ID, \"-\"))\n\n\nvillage &lt;- village %&gt;%\n  left_join(pop2019,\n            by = join_by(\n              VILLCODE == V_ID))\n\nWe want to attach the population numbers to the village boundaries, but the village codes in the population file have a dash in them while the codes in the boundary file do not. The dash is removed first so the two codes can match, and then the join is done.\n\n\nCheck for Missing or Zero Values\n\nsummary(village)\n\n      VILLCODE       COUNTYNAME       TOWNNAME        VILLNAME  \n Length   :622   Length   :622   Length   :622   Length   :622  \n N.unique :622   N.unique :  1   N.unique : 28   N.unique :548  \n N.blank  :  0   N.blank  :  0   N.blank  :  0   N.blank  :  0  \n Min.nchar: 11   Min.nchar:  3   Min.nchar:  2   Min.nchar:  3  \n Max.nchar: 11   Max.nchar:  3   Max.nchar:  3   Max.nchar:  4  \n                                                 NAs      :  5  \n                                                                \n      VILLENG         COUNTYID       COUNTYCODE        TOWNID   \n Length   :622   Length   :622   Length   :622   Length   :622  \n N.unique :527   N.unique :  1   N.unique :  1   N.unique : 28  \n N.blank  :  0   N.blank  :  0   N.blank  :  0   N.blank  :  0  \n Min.nchar:  7   Min.nchar:  1   Min.nchar:  5   Min.nchar:  3  \n Max.nchar: 16   Max.nchar:  1   Max.nchar:  5   Max.nchar:  3  \n NAs      :  5                                                  \n                                                                \n      TOWNCODE          NOTE       COUNTY_ID           COUNTY   \n Length   :622   Length   :622   Min.   :66000   Length   :622  \n N.unique : 28   N.unique :  1   1st Qu.:66000   N.unique :  1  \n N.blank  :  0   N.blank  :  0   Median :66000   N.blank  :  0  \n Min.nchar:  8   Min.nchar:  5   Mean   :66000   Min.nchar:  3  \n Max.nchar:  8   Max.nchar:  5   3rd Qu.:66000   Max.nchar:  3  \n                 NAs      :617   Max.   :66000   NAs      :  5  \n                                 NAs    :5                      \n    TOWN_ID               TOWN          VILLAGE        H_CNT     \n Min.   :6.6e+07   Length   :622   Length   :622   Min.   : 180  \n 1st Qu.:6.6e+07   N.unique : 28   N.unique :548   1st Qu.: 724  \n Median :6.6e+07   N.blank  :  0   N.blank  :  0   Median :1335  \n Mean   :6.6e+07   Min.nchar:  2   Min.nchar:  3   Mean   :1592  \n 3rd Qu.:6.6e+07   Max.nchar:  3   Max.nchar:  4   3rd Qu.:2195  \n Max.   :6.6e+07   NAs      :  5   NAs      :  5   Max.   :7599  \n NAs    :5                                         NAs    :5     \n     P_CNT           M_CNT          F_CNT          INFO_TIME  \n Min.   :  487   Min.   : 257   Min.   : 230   Length   :622  \n 1st Qu.: 2139   1st Qu.:1095   1st Qu.:1053   N.unique :  1  \n Median : 3862   Median :1911   Median :1934   N.blank  :  0  \n Mean   : 4545   Mean   :2234   Mean   :2311   Min.nchar:  7  \n 3rd Qu.: 6151   3rd Qu.:3022   3rd Qu.:3171   Max.nchar:  7  \n Max.   :18652   Max.   :8741   Max.   :9911   NAs      :  5  \n NAs    :5       NAs    :5      NAs    :5                     \n          geometry  \n MULTIPOLYGON :622  \n epsg:3826    :  0  \n +proj=tmer...:  0  \n                    \n                    \n                    \n                    \n\n\n\nvillage &lt;- village %&gt;%\n  filter(!is.na(P_CNT)) \n\n\nany(is.na(village$H_CNT))\n\n[1] FALSE\n\nany(is.na(village$P_CNT))\n\n[1] FALSE\n\nany(is.na(village$M_CNT))\n\n[1] FALSE\n\nany(is.na(village$F_CNT))\n\n[1] FALSE\n\n\nFive villages have no population record, so their household and population counts came through empty after the join. The Huff calculation cannot work with empty values, so those five are dropped."
+    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#mapping-gdppc",
+    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#mapping-gdppc",
+    "title": "In-class_Ex04",
+    "section": "Mapping GDPPC",
+    "text": "Mapping GDPPC"
   },
   {
-    "objectID": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#computing-distance-matrix",
-    "href": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#computing-distance-matrix",
-    "title": "Market Area Analysis for Retail and Service Locations using Huff model",
-    "section": "Computing Distance Matrix",
-    "text": "Computing Distance Matrix\n\nvillage_center &lt;- st_point_on_surface(village)\n\n\ndistmat &lt;- st_distance(village_center, stores)\n\nRather than measure from the whole village shape, each village is reduced to one point, and the distance is measured from that point to every store. st_point_on_surface() is used instead of a plain centroid because a centroid of an oddly shaped village can land outside it, whereas this function always gives a point that sits inside the village.\n\nrownames(distmat) &lt;- village$`VILLCODE`\ncolnames(distmat) &lt;- stores$`Store_CD`\n\ndistmat_long &lt;- distmat %&gt;%\n  as.data.frame() %&gt;%\n  rownames_to_column(var = \"VILLCODE\") %&gt;%\n  pivot_longer(\n    cols = -VILLCODE,\n    names_to = \"Store_CD\",\n    values_to = \"distance\"\n  ) %&gt;%\n  mutate(distance = as.numeric(distance))\n\nThe distance matrix is a grid with villages down the side and stores across the top. The next step needs a long list instead, with one row for every village and store pair, so the grid is labelled with the village and store codes and then reshaped."
+    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#converting-to-spatialpolygondataframe",
+    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#converting-to-spatialpolygondataframe",
+    "title": "In-class_Ex04",
+    "section": "Converting to SpatialPolygonDataFrame",
+    "text": "Converting to SpatialPolygonDataFrame\n\nhunan_sp &lt;- hunan_sf %&gt;%\n  as_Spatial()"
   },
   {
-    "objectID": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#preparing-interaction-matrix",
-    "href": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#preparing-interaction-matrix",
-    "title": "Market Area Analysis for Retail and Service Locations using Huff model",
-    "section": "Preparing Interaction Matrix",
-    "text": "Preparing Interaction Matrix\n\ninteraction_matrix &lt;- distmat_long %&gt;%\n  left_join(\n    stores %&gt;% \n      st_drop_geometry() %&gt;% \n      select(Store_CD, Store_size),\n    by = \"Store_CD\") %&gt;%\n  relocate(\n    distance, .after = last_col())\n\n\nsummary(interaction_matrix)\n\n      VILLCODE          Store_CD       Store_size     distance      \n Length   :17276   Length   :17276   Min.   :100   Min.   :  108.5  \n N.unique :  617   N.unique :   28   1st Qu.:100   1st Qu.: 6678.7  \n N.blank  :    0   N.blank  :    0   Median :100   Median :11965.3  \n Min.nchar:   11   Min.nchar:    2   Mean   :100   Mean   :12762.7  \n Max.nchar:   11   Max.nchar:    2   3rd Qu.:100   3rd Qu.:18122.3  \n                                     Max.   :100   Max.   :41395.4  \n\n\nThe MCI package wants one table with four things on every row: the village, the store, how attractive the store is, and how far apart they are. The store size is attached to each pair here. With 617 villages and 28 stores that makes 17,276 rows."
+    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geographically-weighted-summary-statistics-gsww",
+    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geographically-weighted-summary-statistics-gsww",
+    "title": "In-class_Ex04",
+    "section": "Geographically Weighted Summary Statistics (GSWW)",
+    "text": "Geographically Weighted Summary Statistics (GSWW)\n\nDetermine adaptive bandwidth\nCross-Validation\n\nbw_CV &lt;- bw.gwr(GDPPC ~ 1,\n                data = hunan_sp,\n                approach = \"CV\",\n                adaptive = TRUE,\n                kernel = \"bisquare\",\n                longlat = T) \n\nAdaptive bandwidth: 62 CV score: 15515442343 \nAdaptive bandwidth: 46 CV score: 14937956887 \nAdaptive bandwidth: 36 CV score: 14408561608 \nAdaptive bandwidth: 29 CV score: 14198527496 \nAdaptive bandwidth: 26 CV score: 13898800611 \nAdaptive bandwidth: 22 CV score: 13662299974 \nAdaptive bandwidth: 22 CV score: 13662299974 \n\n\n\nbw_CV\n\n[1] 22\n\n\nAICc\n\nbw_AIC &lt;- bw.gwr(GDPPC ~ 1,\n                data = hunan_sp,\n                approach = \"AICc\",\n                adaptive = TRUE,\n                kernel = \"bisquare\",\n                longlat = T) \n\nAdaptive bandwidth (number of nearest neighbours): 62 AICc value: 1923.156 \nAdaptive bandwidth (number of nearest neighbours): 46 AICc value: 1920.469 \nAdaptive bandwidth (number of nearest neighbours): 36 AICc value: 1917.324 \nAdaptive bandwidth (number of nearest neighbours): 29 AICc value: 1916.661 \nAdaptive bandwidth (number of nearest neighbours): 26 AICc value: 1914.897 \nAdaptive bandwidth (number of nearest neighbours): 22 AICc value: 1914.045 \nAdaptive bandwidth (number of nearest neighbours): 22 AICc value: 1914.045 \n\n\n\nbw_AIC\n\n[1] 22\n\n\n\n\nComputing geographically weighted summary statistics\nThe code chunk below computes geographically weighted summary statistics by using gwss() of GWmodel package. The analysis is performed using adaptive distance weighted. The distance is derived using AICc method and the kernel method used is bisquare.\n\ngw_stat &lt;- gwss(data = hunan_sp,\n                vars = \"GDPPC\",\n                bw = bw_AIC,\n                kernel = \"bisquare\",\n                adaptive = TRUE,\n                quantile = TRUE,\n                longlat = T) \n\n\n\nPreparing the output data\n\ngwstat_df &lt;- as.data.frame(gw_stat$SDF)\n\n\nhunan_gstat &lt;- cbind(hunan_sf, gwstat_df)\n\n\n\nVisualising geographically weighted summary statistics"
   },
   {
-    "objectID": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#computing-huff-model",
-    "href": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#computing-huff-model",
-    "title": "Market Area Analysis for Retail and Service Locations using Huff model",
-    "section": "Computing Huff Model",
-    "text": "Computing Huff Model\n\nhuff_share &lt;- huff.shares(\n  interaction_matrix, \"VILLCODE\", \"Store_CD\", \n  \"Store_size\", \"distance\")\n\n\nhead(huff_share)\n\n# A tibble: 6 × 7\n  VILLCODE    Store_CD Store_size distance        U_ij sum_U_ij[,1]    p_ij\n  &lt;chr&gt;       &lt;chr&gt;         &lt;dbl&gt;    &lt;dbl&gt;       &lt;dbl&gt; &lt;list&gt;         &lt;dbl&gt;\n1 66000010001 BT              100    3807. 0.00000690  &lt;dbl [1]&gt;    0.0349 \n2 66000010001 CT              100    5337. 0.00000351  &lt;dbl [1]&gt;    0.0178 \n3 66000010001 DD              100   10762. 0.000000863 &lt;dbl [1]&gt;    0.00437\n4 66000010001 DK              100    4787. 0.00000436  &lt;dbl [1]&gt;    0.0221 \n5 66000010001 DL              100    3911. 0.00000654  &lt;dbl [1]&gt;    0.0331 \n6 66000010001 DR              100    5613. 0.00000317  &lt;dbl [1]&gt;    0.0161 \n\n\n\nhuff_share %&gt;%\n  group_by(VILLCODE) %&gt;%\n  summarise(total = sum(p_ij)) %&gt;%\n  summary()\n\n      VILLCODE       total  \n Length   :617   Min.   :1  \n N.unique :617   1st Qu.:1  \n N.blank  :  0   Median :1  \n Min.nchar: 11   Mean   :1  \n Max.nchar: 11   3rd Qu.:1  \n                 Max.   :1  \n\n\nThe new column p_ij is the probability that a resident of village i shops at store j. Every village’s probabilities across all 28 stores should add up to 1, since a resident has to pick one of them. The last chunk checks that, and the total should come out as 1 for every village.\n\nHow Much Does the Distance Decay Matter?\n\nhuff_lambda &lt;- map_dfr(c(-1, -2, -3), function(l) {\n  huff.shares(\n    interaction_matrix, \"VILLCODE\", \"Store_CD\",\n    \"Store_size\", \"distance\",\n    lambda = l) %&gt;%\n    group_by(VILLCODE) %&gt;%\n    summarise(top_share = max(p_ij)) %&gt;%\n    mutate(lambda = factor(l))\n})\n\n\nggplot(data = huff_lambda,\n       aes(x = top_share, fill = lambda)) +\n  geom_density(alpha = 0.4) +\n  labs(x = \"Probability of the most likely store\",\n       y = \"Density\",\n       fill = \"Lambda\")\n\n\n\n\n\n\n\n\n\nhuff_lambda %&gt;%\n  group_by(lambda) %&gt;%\n  summarise(median_top_share = median(top_share))\n\n# A tibble: 3 × 2\n  lambda median_top_share\n  &lt;fct&gt;             &lt;dbl&gt;\n1 -1                0.158\n2 -2                0.412\n3 -3                0.663\n\n\nThe writeup runs the model with the default distance decay (lambda of -2) and never says what that setting does. The more negative lambda is, the harder distance punishes a store. Here the model is run with -1, -2 and -3, and for each village we keep the probability of its single most likely store. If distance matters more, villages should lean harder on their nearest store, so the curve should shift to the right as lambda gets more negative.\n\n\nTrade Area Analysis for a Single Store\n\nmarket_share &lt;- huff_share %&gt;%\n  filter(Store_CD == \"BT\")\n\n\nTrade_area &lt;- village %&gt;%\n  left_join(market_share, by = \"VILLCODE\")\n\n\nselected_store &lt;- stores %&gt;%\n  filter(Store_CD == \"BT\")\n\nStore BT is picked out of the 28. Its probabilities are attached to the village boundaries so we can map how likely each village is to shop there.\n\ntm_shape(Trade_area) +\n  tm_polygons(fill = \"p_ij\",\n              fill.scale = tm_scale_intervals(\n                style = \"quantile\", \n                n = 10,\n                values = \"brewer.blues\"),\n              fill.legend = tm_legend(\n                title = \"Patronage Probability\")) +\n  tm_shape(selected_store) +\n    tm_dots(size = 0.3,\n            fill = \"red\",\n            col = \"black\") +\n  tm_title(\"Distribution of Patronage Probability of Store BT by village\") +\n  tm_layout(frame = TRUE) +\n  tm_borders(fill_alpha = 0.5) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha =0.2) \n\n\n\n\n\n\n\n\nThe darkest villages are the ones most likely to shop at BT, and they cluster around the red dot. The colour fades with distance, and it also fades faster wherever other stores are closer, because the competition takes away customers.\n\n\nTrade Areas of the Best and Worst Selling Stores\n\nstore_rank &lt;- stores %&gt;%\n  st_drop_geometry() %&gt;%\n  arrange(desc(Total_Sales))\n\ntop_store &lt;- store_rank$Store_CD[1]\nbottom_store &lt;- store_rank$Store_CD[nrow(store_rank)]\n\n\nmap_trade_area &lt;- function(store_code) {\n  ta &lt;- village %&gt;%\n    left_join(huff_share %&gt;% filter(Store_CD == store_code),\n              by = \"VILLCODE\")\n  st &lt;- stores %&gt;% filter(Store_CD == store_code)\n  \n  tm_shape(ta) +\n    tm_polygons(fill = \"p_ij\",\n                fill.scale = tm_scale_intervals(\n                  style = \"quantile\",\n                  n = 10,\n                  values = \"brewer.blues\"),\n                fill.legend = tm_legend(\n                  title = \"Patronage Probability\")) +\n    tm_shape(st) +\n    tm_dots(size = 0.3,\n            fill = \"red\",\n            col = \"black\") +\n    tm_title(paste(\"Trade area of store\", store_code)) +\n    tm_layout(frame = TRUE)\n}\n\n\ntmap_arrange(map_trade_area(top_store),\n             map_trade_area(bottom_store),\n             ncol = 2)\n\n\n\n\n\n\n\n\nStore BT was picked at random, so here are the same trade area maps for the best selling store on the left and the worst selling store on the right. Both are modelled as the same size, so any difference between the two maps comes from where each store sits. A store with lots of competitors nearby gets a smaller and paler trade area. This lets us see whether location alone seems to explain why one store sells more than the other.\n\n\nStore Sales Analysis\n\nhuff_share_pp &lt;- huff_share %&gt;%\n  left_join(village %&gt;% \n      st_drop_geometry() %&gt;% \n      select(VILLCODE, P_CNT),\n    by = \"VILLCODE\") %&gt;%\n  relocate(\n    distance, .after = last_col())\n\n\nhuff_total &lt;- shares.total(\n  huff_share_pp, \"VILLCODE\", \"Store_CD\",\n  \"p_ij\", \"P_CNT\")\n\n\nstore_sales_est &lt;- stores %&gt;%\n  left_join(huff_total,\n            by = join_by(\n              \"Store_CD\" == \"suppliers_single\"))\n\nAnother use of the Huff model is estimating how much each store should sell. Each village’s population is multiplied by its probability of shopping at the store, and those numbers are added up over all villages. The result, sum_E_j, is the model’s sales estimate for each store, which we can set against the real sales.\n\nstore_sales_nongeom &lt;- store_sales_est %&gt;% \n  st_drop_geometry()\n\n\nggscatterstats(\n  store_sales_nongeom,\n  x = sum_E_j,\n  y = Total_Sales)\n\n\n\n\n\n\n\n\nThe closer the dots sit to the line, the better the model’s estimate matches what the stores really sold. The correlation at the top of the plot sums that up in one number. Keep in mind that every store was treated as the same size, so the model only knows about location and competition.\n\nhuff_share_wider &lt;- huff_share %&gt;%\n  select(VILLCODE, Store_CD, p_ij) %&gt;%\n    pivot_wider(names_from = Store_CD, \n                values_from = p_ij)\n\nThis reshapes the probabilities into one row per village and one column per store. It is easier to scan, and it could be used for something like grouping villages by their shopping habits.\n\n\nWhat If Store Size Reflects Actual Sales?\n\ninteraction_matrix_sales &lt;- distmat_long %&gt;%\n  left_join(\n    stores %&gt;% \n      st_drop_geometry() %&gt;% \n      select(Store_CD, Total_Sales),\n    by = \"Store_CD\") %&gt;%\n  relocate(\n    distance, .after = last_col())\n\n\nhuff_share_sales &lt;- huff.shares(\n  interaction_matrix_sales, \"VILLCODE\", \"Store_CD\", \n  \"Total_Sales\", \"distance\")\n\n\nhuff_share_sales_pp &lt;- huff_share_sales %&gt;%\n  left_join(village %&gt;% \n      st_drop_geometry() %&gt;% \n      select(VILLCODE, P_CNT),\n    by = \"VILLCODE\") %&gt;%\n  relocate(distance, .after = last_col())\n\n\nhuff_total_sales &lt;- shares.total(\n  huff_share_sales_pp, \"VILLCODE\", \"Store_CD\",\n  \"p_ij\", \"P_CNT\")\n\n\nsales_compare &lt;- store_sales_nongeom %&gt;%\n  select(Store_CD, Total_Sales, sum_E_j) %&gt;%\n  rename(est_equal_size = sum_E_j) %&gt;%\n  left_join(\n    huff_total_sales %&gt;%\n      rename(Store_CD = suppliers_single,\n             est_by_sales = sum_E_j),\n    by = \"Store_CD\")\n\n\nsales_compare %&gt;%\n  summarise(\n    equal_size = cor(est_equal_size, Total_Sales),\n    sales_as_size = cor(est_by_sales, Total_Sales))\n\n  equal_size sales_as_size\n1  0.5764644     0.8992211\n\n\n\nsales_compare %&gt;%\n  pivot_longer(cols = c(est_equal_size, est_by_sales),\n               names_to = \"version\",\n               values_to = \"estimate\") %&gt;%\n  ggplot(aes(x = estimate, y = Total_Sales)) +\n  geom_point() +\n  geom_smooth(method = lm, se = FALSE) +\n  facet_wrap(~ version, scales = \"free_x\") +\n  labs(x = \"Estimated sales (Huff model)\",\n       y = \"Actual total sales\")\n\n\n\n\n\n\n\n\nEarlier we set every store to a size of 100 because the data has no real store sizes. Here the model is rerun with each store’s actual total sales standing in for how attractive it is, and the two versions are compared. This is only half a fair test, because sales are being used to predict sales, so a better match is partly built in. What it shows is how much of the gap in the first model came from treating every store as identical.\n\n\nWhich Stores Beat the Model?\n\nsales_model &lt;- lm(Total_Sales ~ sum_E_j, \n                  data = store_sales_nongeom,\n                  na.action = na.exclude)\n\n\nstore_perf &lt;- store_sales_est %&gt;%\n  mutate(residual = residuals(sales_model),\n         performance = factor(\n           ifelse(residual &gt; 0, \"Above model\", \"Below model\"),\n           levels = c(\"Above model\", \"Below model\")))\n\n\nstore_perf %&gt;%\n  st_drop_geometry() %&gt;%\n  select(Store_CD, Store_Name, Total_Sales, sum_E_j, residual) %&gt;%\n  arrange(desc(residual)) %&gt;%\n  slice(c(1:5, (n() - 4):n()))\n\n   Store_CD                   Store_Name Total_Sales   sum_E_j residual\n1        DD                Tung Lai (DD)     6863624  82681.16  2282179\n2        ZK Taichung Zhong Ke Delco (ZK)     6753073  88302.90  1862332\n3        WF        Taichung Wu Feng (WF)     5085611  59774.36  1764443\n4        LM                Lee-Ming (LM)     6958967  94948.05  1702626\n5        MT               Mei-Tsung (MT)     7969508 113788.08  1676634\n6        EH                           EH     1475963  59247.82 -1816236\n7        SQ                           SQ     2361102  87869.69 -2505804\n8        ZS Taichung Zhongxing East (ZS)     2771448 103062.93 -2931354\n9        QH                           QH     2968912 107656.67 -2986627\n10       TG          TG - Dajia Taichung     1753584  94177.03 -3460337\n\n\n\ntm_shape(town) +\n  tm_polygons(fill = \"grey95\") +\ntm_shape(store_perf) +\n  tm_dots(fill = \"performance\",\n          fill.scale = tm_scale_categorical(\n            values = c(\"blue\", \"red\")),\n          fill.legend = tm_legend(\n            title = \"Actual sales vs model\"),\n          size = 1) +\n  tm_title(\"Stores selling above or below the Huff model estimate\") +\n  tm_layout(frame = TRUE)\n\n\n\n\n\n\n\n\nInstead of only asking how well the model fits, this asks which stores do better or worse than it expects. The table lists the top five and bottom five, and the map marks stores that beat the model in blue and stores that fall short in red. A store selling more than its location predicts might have a strong brand or good management, and one selling less might have a problem the map cannot see. Those are the stores worth a closer look."
+    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#gwss-with-fixed-bandwidth",
+    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#gwss-with-fixed-bandwidth",
+    "title": "In-class_Ex04",
+    "section": "GWSS with Fixed Bandwidth",
+    "text": "GWSS with Fixed Bandwidth\n\nDetermine fixed bandwidth\nCross Validation\n\nbw_CV &lt;- bw.gwr(GDPPC ~ 1, \n             data = hunan_sp,\n             approach = \"CV\",\n             adaptive = FALSE, \n             kernel = \"bisquare\", \n             longlat = T)\n\nFixed bandwidth: 357.4897 CV score: 16265191728 \nFixed bandwidth: 220.985 CV score: 14954930931 \nFixed bandwidth: 136.6204 CV score: 14134185837 \nFixed bandwidth: 84.48025 CV score: 13693362460 \nFixed bandwidth: 52.25585 CV score: Inf \nFixed bandwidth: 104.396 CV score: 13891052305 \nFixed bandwidth: 72.17162 CV score: 13577893677 \nFixed bandwidth: 64.56447 CV score: 14681160609 \nFixed bandwidth: 76.8731 CV score: 13444716890 \nFixed bandwidth: 79.77877 CV score: 13503296834 \nFixed bandwidth: 75.07729 CV score: 13452450771 \nFixed bandwidth: 77.98296 CV score: 13457916138 \nFixed bandwidth: 76.18716 CV score: 13442911302 \nFixed bandwidth: 75.76323 CV score: 13444600639 \nFixed bandwidth: 76.44916 CV score: 13442994078 \nFixed bandwidth: 76.02523 CV score: 13443285248 \nFixed bandwidth: 76.28724 CV score: 13442844774 \nFixed bandwidth: 76.34909 CV score: 13442864995 \nFixed bandwidth: 76.24901 CV score: 13442855596 \nFixed bandwidth: 76.31086 CV score: 13442847019 \nFixed bandwidth: 76.27264 CV score: 13442846793 \nFixed bandwidth: 76.29626 CV score: 13442844829 \nFixed bandwidth: 76.28166 CV score: 13442845238 \nFixed bandwidth: 76.29068 CV score: 13442844678 \nFixed bandwidth: 76.29281 CV score: 13442844691 \nFixed bandwidth: 76.28937 CV score: 13442844698 \nFixed bandwidth: 76.2915 CV score: 13442844676 \nFixed bandwidth: 76.292 CV score: 13442844679 \nFixed bandwidth: 76.29119 CV score: 13442844676 \nFixed bandwidth: 76.29099 CV score: 13442844676 \nFixed bandwidth: 76.29131 CV score: 13442844676 \nFixed bandwidth: 76.29138 CV score: 13442844676 \nFixed bandwidth: 76.29126 CV score: 13442844676 \nFixed bandwidth: 76.29123 CV score: 13442844676 \n\n\nAICc\n\nbw_AIC &lt;- bw.gwr(GDPPC ~ 1, \n             data = hunan_sp,\n             approach =\"AICc\",\n             adaptive = FALSE, \n             kernel = \"bisquare\", \n             longlat = T)\n\nFixed bandwidth: 357.4897 AICc value: 1927.631 \nFixed bandwidth: 220.985 AICc value: 1921.547 \nFixed bandwidth: 136.6204 AICc value: 1919.993 \nFixed bandwidth: 84.48025 AICc value: 1940.603 \nFixed bandwidth: 168.8448 AICc value: 1919.457 \nFixed bandwidth: 188.7606 AICc value: 1920.007 \nFixed bandwidth: 156.5362 AICc value: 1919.41 \nFixed bandwidth: 148.929 AICc value: 1919.527 \nFixed bandwidth: 161.2377 AICc value: 1919.392 \nFixed bandwidth: 164.1433 AICc value: 1919.403 \nFixed bandwidth: 159.4419 AICc value: 1919.393 \nFixed bandwidth: 162.3475 AICc value: 1919.394 \nFixed bandwidth: 160.5517 AICc value: 1919.391 \n\n\n\n\nComputing fixed bandwidth GWSS\n\ngwstat &lt;- gwss(data = hunan_sp,\n               vars = \"GDPPC\",\n               bw = bw_AIC,\n               kernel = \"bisquare\",\n               adaptive = FALSE,\n               quantile = TRUE,\n               longlat = T)\n\n\n\nPreparing the output data\n\ngwstat_df &lt;- as.data.frame(gwstat$SDF)\n\n\nhunan_gstat &lt;- cbind(hunan_sf, gwstat_df)\n\n\n\nVisualising fixed bandwidth geographically weighted mean\n\ntm_shape(hunan_gstat) +\n  tm_polygons(fill = \"GDPPC_LM\",\n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 5,\n                values = \"brewer.blues\"),\n              fill.legend = tm_legend(\n                title = \"local Mean\")) +\n  tm_borders(fill_alpha = 0.5) +\n  tm_title(\"Distribution of geographically wieghted mean\") + \n  tm_layout(legend.position = c(\"left\", \"bottom\"))"
   },
   {
-    "objectID": "Hands_on_Ex/Hands_onEx08/data/geospatial/TOWN_TC.html",
-    "href": "Hands_on_Ex/Hands_onEx08/data/geospatial/TOWN_TC.html",
-    "title": "GAA-Abinav-Test",
-    "section": "",
-    "text": "&lt;!DOCTYPE qgis PUBLIC ‘http://mrcc.com/qgis.dtd’ ‘SYSTEM’&gt;     dataset\n\n\n       GEOGCRS[“TWD97”,DATUM[“Taiwan Datum 1997”,ELLIPSOID[“GRS 1980”,6378137,298.257222101,LENGTHUNIT[“metre”,1]]],PRIMEM[“Greenwich”,0,ANGLEUNIT[“degree”,0.0174532925199433]],CS[ellipsoidal,2],AXIS[“geodetic latitude (Lat)”,north,ORDER[1],ANGLEUNIT[“degree”,0.0174532925199433]],AXIS[“geodetic longitude (Lon)”,east,ORDER[2],ANGLEUNIT[“degree”,0.0174532925199433]],USAGE[SCOPE[“Horizontal component of 3D system.”],AREA[“Taiwan, Republic of China - onshore and offshore - Taiwan Island, Penghu (Pescadores) Islands.”],BBOX[17.36,114.32,26.96,123.61]],ID[“EPSG”,3824]] +proj=longlat +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +no_defs 27230 3824 EPSG:3824 TWD97 longlat EPSG:7019 true"
+    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geographically-weighted-correlation",
+    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geographically-weighted-correlation",
+    "title": "In-class_Ex04",
+    "section": "Geographically Weighted Correlation",
+    "text": "Geographically Weighted Correlation\n\nConventional Statistical Solution\n\nggscatterstats(\n  data = hunan2012, \n  x = Agri, \n  y = GDPPC,\n  xlab = \"Gross Agriculture Output\", \n  ylab = \"GDP per capita\", \n  label.var = County, \n  label.expression = Agri &gt; 10000 & GDPPC &gt; 50000, \n  point.label.args = list(alpha = 0.7, size = 4, color = \"grey50\"),\n  xfill = \"#CC79A7\", \n  yfill = \"#009E73\", \n  title = \"Relationship between GDP PC and Gross Agriculture Output\")\n\n\n\n\n\n\n\n\n\n\nGeoVisualization\n\ntm_shape(hunan_sf) + \n  tm_polygons(\n    fill = \"GDPPC\",\n    fill.scale = tm_scale_intervals(\n      n = 5,\n      style = \"quantile\",\n      values = \"brewer.oranges\")) +\n  tm_borders(fill_alpha = 0.25,\n             lwd = 0.5) +\n  tm_title(\"Distribution of GDP per capita\") +\n  tm_layout(legend.position = c(\"left\", \"bottom\"))"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geospatial-analytics-solution",
+    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geospatial-analytics-solution",
+    "title": "In-class_Ex04",
+    "section": "Geospatial analytics solution",
+    "text": "Geospatial analytics solution\n\nDetermine the bandwidth\n\nbw &lt;- bw.gwr(GDPPC ~ GIO, \n             data = hunan_sp, \n             approach = \"AICc\",\n             kernel = \"bisquare\",\n             adaptive = TRUE)\n\nAdaptive bandwidth (number of nearest neighbours): 62 AICc value: 1870.235 \nAdaptive bandwidth (number of nearest neighbours): 46 AICc value: 1870.852 \nAdaptive bandwidth (number of nearest neighbours): 72 AICc value: 1869.744 \nAdaptive bandwidth (number of nearest neighbours): 78 AICc value: 1869.713 \nAdaptive bandwidth (number of nearest neighbours): 82 AICc value: 1869.604 \nAdaptive bandwidth (number of nearest neighbours): 84 AICc value: 1869.537 \nAdaptive bandwidth (number of nearest neighbours): 86 AICc value: 1869.647 \nAdaptive bandwidth (number of nearest neighbours): 83 AICc value: 1869.567 \nAdaptive bandwidth (number of nearest neighbours): 84 AICc value: 1869.537 \n\n\n\n\nComputing gwCorrelation\n\ngwstats &lt;- gwss(hunan_sp, \n                vars = c(\"GDPPC\", \"GIO\"), \n                bw = bw,\n                kernel = \"bisquare\",\n                adaptive = TRUE, \n                longlat = T)\n\n\n\nExtracting the Result\n\ngwstat_df &lt;- as.data.frame(gwstats$SDF) %&gt;%\n  select(c(12,13)) %&gt;%\n  rename(gwCorr = Corr_GDPPC.GIO,\n         gwSpearman = Spearman_rho_GDPPC.GIO)\n\n\nhunan_Corr &lt;- cbind(hunan_sf, gwstat_df)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#visualising-local-correlation",
+    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#visualising-local-correlation",
+    "title": "In-class_Ex04",
+    "section": "Visualising Local Correlation",
+    "text": "Visualising Local Correlation\n\ntm_shape(hunan_Corr) +\n  tm_polygons(fill = \"gwSpearman\",\n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 5,\n                values = \"brewer.blues\"),\n              fill.legend = tm_legend(\n                title = \"local Spearman Rho\")) +\n  tm_borders(fill_alpha = 0.5) +\n  tm_title(\"Local Spearman Rho\", \n  size = 2.0) +\n  tm_layout(frame = TRUE)"
   },
   {
     "objectID": "Hands_on_Ex/Hands_onEx07/hands_on_ex07.html",
@@ -805,165 +693,235 @@
     "text": "Comparing NbClust’s suggestion for optimal cluster count against the gap statistic’s suggestion:\n\nset.seed(1234)\nnb_result &lt;- NbClust(shan_ict, distance = \"euclidean\", \n                      min.nc = 2, max.nc = 10, \n                      method = \"ward.D\", index = \"all\")\n\n\n\n\n\n\n\n\n*** : The Hubert index is a graphical method of determining the number of clusters.\n                In the plot of Hubert index, we seek a significant knee that corresponds to a \n                significant increase of the value of the measure i.e the significant peak in Hubert\n                index second differences plot. \n \n\n\n\n\n\n\n\n\n\n*** : The D index is a graphical method of determining the number of clusters. \n                In the plot of D index, we seek a significant knee (the significant peak in Dindex\n                second differences plot) that corresponds to a significant increase of the value of\n                the measure. \n \n******************************************************************* \n* Among all indices:                                                \n* 9 proposed 2 as the best number of clusters \n* 2 proposed 3 as the best number of clusters \n* 6 proposed 4 as the best number of clusters \n* 3 proposed 5 as the best number of clusters \n* 1 proposed 6 as the best number of clusters \n* 2 proposed 10 as the best number of clusters \n\n                   ***** Conclusion *****                            \n \n* According to the majority rule, the best number of clusters is  2 \n \n \n******************************************************************* \n\n\nNbClust runs 30 different indices to vote on the best number of clusters, worth seeing if its recommendation lines up with the gap statistic’s suggestion of 6, or if it points somewhere else entirely."
   },
   {
-    "objectID": "Hands_on_Ex/Hands_onEx08/data/geospatial/STORES_TC1.html",
-    "href": "Hands_on_Ex/Hands_onEx08/data/geospatial/STORES_TC1.html",
-    "title": "GAA-Abinav-Test",
+    "objectID": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html",
+    "href": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html",
+    "title": "Market Area Analysis for Retail and Service Locations using Huff model",
     "section": "",
-    "text": "&lt;!DOCTYPE qgis PUBLIC ‘http://mrcc.com/qgis.dtd’ ‘SYSTEM’&gt;     dataset\n\n\n                PROJCRS[“TWD97 / TM2 zone 121”,BASEGEOGCRS[“TWD97”,DATUM[“Taiwan Datum 1997”,ELLIPSOID[“GRS 1980”,6378137,298.257222101,LENGTHUNIT[“metre”,1]]],PRIMEM[“Greenwich”,0,ANGLEUNIT[“degree”,0.0174532925199433]],ID[“EPSG”,3824]],CONVERSION[“Taiwan 2-degree TM zone 121”,METHOD[“Transverse Mercator”,ID[“EPSG”,9807]],PARAMETER[“Latitude of natural origin”,0,ANGLEUNIT[“degree”,0.0174532925199433],ID[“EPSG”,8801]],PARAMETER[“Longitude of natural origin”,121,ANGLEUNIT[“degree”,0.0174532925199433],ID[“EPSG”,8802]],PARAMETER[“Scale factor at natural origin”,0.9999,SCALEUNIT[“unity”,1],ID[“EPSG”,8805]],PARAMETER[“False easting”,250000,LENGTHUNIT[“metre”,1],ID[“EPSG”,8806]],PARAMETER[“False northing”,0,LENGTHUNIT[“metre”,1],ID[“EPSG”,8807]]],CS[Cartesian,2],AXIS[“easting (X)”,east,ORDER[1],LENGTHUNIT[“metre”,1]],AXIS[“northing (Y)”,north,ORDER[2],LENGTHUNIT[“metre”,1]],USAGE[SCOPE[“Engineering survey, topographic mapping.”],AREA[“Taiwan, Republic of China - between 120°E and 122°E, onshore and offshore - Taiwan Island.”],BBOX[20.41,119.99,26.72,122.06]],ID[“EPSG”,3826]] +proj=tmerc +lat_0=0 +lon_0=121 +k=0.9999 +x_0=250000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs 27234 3826 EPSG:3826 TWD97 / TM2 zone 121 tmerc EPSG:7019 false"
+    "text": "set.seed(1234)\npacman::p_load(sf, tidyverse, MCI, tmap, ggstatsplot)"
   },
   {
-    "objectID": "Hands_on_Ex/Hands_onEx08/data/geospatial/VILLAGE_TC.html",
-    "href": "Hands_on_Ex/Hands_onEx08/data/geospatial/VILLAGE_TC.html",
-    "title": "GAA-Abinav-Test",
+    "objectID": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#adding-packages",
+    "href": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#adding-packages",
+    "title": "Market Area Analysis for Retail and Service Locations using Huff model",
     "section": "",
-    "text": "&lt;!DOCTYPE qgis PUBLIC ‘http://mrcc.com/qgis.dtd’ ‘SYSTEM’&gt;     dataset\n\n\n       PROJCRS[“TWD97 / TM2 zone 121”,BASEGEOGCRS[“TWD97”,DATUM[“Taiwan Datum 1997”,ELLIPSOID[“GRS 1980”,6378137,298.257222101,LENGTHUNIT[“metre”,1]]],PRIMEM[“Greenwich”,0,ANGLEUNIT[“degree”,0.0174532925199433]],ID[“EPSG”,3824]],CONVERSION[“Taiwan 2-degree TM zone 121”,METHOD[“Transverse Mercator”,ID[“EPSG”,9807]],PARAMETER[“Latitude of natural origin”,0,ANGLEUNIT[“degree”,0.0174532925199433],ID[“EPSG”,8801]],PARAMETER[“Longitude of natural origin”,121,ANGLEUNIT[“degree”,0.0174532925199433],ID[“EPSG”,8802]],PARAMETER[“Scale factor at natural origin”,0.9999,SCALEUNIT[“unity”,1],ID[“EPSG”,8805]],PARAMETER[“False easting”,250000,LENGTHUNIT[“metre”,1],ID[“EPSG”,8806]],PARAMETER[“False northing”,0,LENGTHUNIT[“metre”,1],ID[“EPSG”,8807]]],CS[Cartesian,2],AXIS[“easting (X)”,east,ORDER[1],LENGTHUNIT[“metre”,1]],AXIS[“northing (Y)”,north,ORDER[2],LENGTHUNIT[“metre”,1]],USAGE[SCOPE[“Engineering survey, topographic mapping.”],AREA[“Taiwan, Republic of China - between 120°E and 122°E, onshore and offshore - Taiwan Island.”],BBOX[20.41,119.99,26.72,122.06]],ID[“EPSG”,3826]] +proj=tmerc +lat_0=0 +lon_0=121 +k=0.9999 +x_0=250000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs 27234 3826 EPSG:3826 TWD97 / TM2 zone 121 tmerc EPSG:7019 false"
+    "text": "set.seed(1234)\npacman::p_load(sf, tidyverse, MCI, tmap, ggstatsplot)"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html",
-    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html",
-    "title": "In-class_Ex04",
+    "objectID": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#importing-data",
+    "href": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#importing-data",
+    "title": "Market Area Analysis for Retail and Service Locations using Huff model",
+    "section": "Importing Data",
+    "text": "Importing Data\n\nImporting Geospatial Data\n\nstores &lt;- st_read(\n  dsn = \"data/geospatial\",\n  layer = \"STORES_TC\")\n\nReading layer `STORES_TC' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\Hands_on_Ex\\Hands_onEx08\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 28 features and 3 fields\nGeometry type: POINT\nDimension:     XY\nBounding box:  xmin: 202702.9 ymin: 2662196 xmax: 232773.2 ymax: 2693557\nProjected CRS: TWD97 / TM2 zone 121\n\n\n\ntown &lt;- st_read(\n  dsn = \"data/geospatial\",\n  layer = \"TOWN_TC\")\n\nReading layer `TOWN_TC' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\Hands_on_Ex\\Hands_onEx08\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 28 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 194797.1 ymin: 2654887 xmax: 240450.2 ymax: 2703838\nProjected CRS: TWD97 / TM2 zone 121\n\n\n\nvillage &lt;- st_read(\n  dsn = \"data/geospatial\",\n  layer = \"VILLAGE_TC\")\n\nReading layer `VILLAGE_TC' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\Hands_on_Ex\\Hands_onEx08\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 622 features and 10 fields\nGeometry type: MULTIPOLYGON\nDimension:     XY\nBounding box:  xmin: 194797.1 ymin: 2654887 xmax: 240450.2 ymax: 2703838\nProjected CRS: TWD97 / TM2 zone 121\n\n\nThree layers come in here. The stores are points, the towns are the larger boundaries, and the villages are the small areas that act as our customer origins. All three should report the same projected system, TWD97 / TM2 zone 121 (EPSG 3826). Everything that follows is a distance calculation and distances only make sense if every layer uses the same coordinate system.\n\ntmap_mode(\"view\")\ntm_shape(town) +\n  tm_polygons() +\ntm_shape(village) +\n  tm_polygons() + \ntm_shape(stores) +\n  tm_dots()\n\n\n\n\ntmap_mode(\"plot\")\n\nA quick look to confirm the three layers line up and that the stores fall inside the city.\n\n\nImporting Aspatial Data\n\npop2019 &lt;- read_csv(\n  \"data/aspatial/pop2019.csv\")\n\n\nstore_sales &lt;- read_csv(\n  \"data/aspatial/Store_sales_data.csv\")\n\n\nsummary(store_sales)\n\n     Store Code        POD code        Bills            Amount       \n Length   :5499   Length   :5499   Min.   :   1.0   Min.   :      0  \n N.unique : 233   N.unique : 322   1st Qu.:  37.0   1st Qu.:  26703  \n N.blank  :   0   N.blank  :   0   Median : 186.0   Median : 139643  \n Min.nchar:   2   Min.nchar:   1   Mean   : 331.9   Mean   : 236787  \n Max.nchar:   2   Max.nchar:   6   3rd Qu.: 457.0   3rd Qu.: 331952  \n NAs      :  29                    Max.   :7764.0   Max.   :6076060  \n    Ave Bill      \n Min.   :    0.0  \n 1st Qu.:  661.3  \n Median :  730.5  \n Mean   :  825.1  \n 3rd Qu.:  862.2  \n Max.   :24356.0  \n\n\nThe population file has one row per village and the sales file has thousands of rows with many per store, which is why it needs to be summed up before it can be used."
+  },
+  {
+    "objectID": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#data-preparation",
+    "href": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#data-preparation",
+    "title": "Market Area Analysis for Retail and Service Locations using Huff model",
+    "section": "Data Preparation",
+    "text": "Data Preparation\n\nAggregating Store Sales\n\nstore_sales_aggre &lt;- store_sales %&gt;%\n  group_by(`Store Code`) %&gt;%\n  summarise(\n    \"Total_Bill\" = sum(Bills, na.rm = TRUE),\n    \"Total_Sales\" = sum(Amount, na.rm = TRUE))\n\nThe many sales rows per store are added up so that each store has one row, with its total number of bills and its total sales.\n\n\nRelational Join\n\nstores &lt;- stores %&gt;%\n  left_join(store_sales_aggre,\n            by = join_by(\n              Store_CD == `Store Code`)) %&gt;%\n  mutate(Store_size = 100)\n\n\nsummary(stores)\n\n     Store_Name     Store_Addr       Store_CD    Total_Bill   \n Length   :28   Length   : 28   Length   :28   Min.   : 1767  \n N.unique :28   N.unique : 28   N.unique :28   1st Qu.: 5698  \n N.blank  : 0   N.blank  :  0   N.blank  : 0   Median : 8634  \n Min.nchar: 2   Min.nchar: 43   Min.nchar: 2   Mean   : 8021  \n Max.nchar:28   Max.nchar:100   Max.nchar: 2   3rd Qu.:10349  \n                                               Max.   :14468  \n  Total_Sales               geometry    Store_size \n Min.   :1475963   POINT        :28   Min.   :100  \n 1st Qu.:4044821   epsg:3826    : 0   1st Qu.:100  \n Median :6116336   +proj=tmer...: 0   Median :100  \n Mean   :5542852                      Mean   :100  \n 3rd Qu.:6959911                      3rd Qu.:100  \n Max.   :8234234                      Max.   :100  \n\n\n\n\nHow Different Are the Stores’ Sales?\n\nstores %&gt;%\n  st_drop_geometry() %&gt;%\n  ggplot(aes(x = reorder(Store_CD, Total_Sales),\n             y = Total_Sales)) +\n  geom_col(fill = \"light blue\", color = \"black\") +\n  coord_flip() +\n  labs(x = \"Store\", y = \"Total sales\")\n\n\n\n\n\n\n\n\nAll 28 stores are treated as the same size, but their actual sales are clearly not the same. This ranks the stores by total sales, so we can see how big the gap is between the strongest and the weakest. It also sets up an idea we come back to later, which is using sales instead of a flat 100 to represent how attractive each store is.\n\n\nTidying pop2019 Data Frame\n\nglimpse(pop2019)\n\nRows: 625\nColumns: 11\n$ COUNTY_ID &lt;dbl&gt; 66000, 66000, 66000, 66000, 66000, 66000, 66000, 66000, 6600…\n$ COUNTY    &lt;chr&gt; \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市…\n$ TOWN_ID   &lt;dbl&gt; 66000110, 66000110, 66000110, 66000110, 66000110, 66000110, …\n$ TOWN      &lt;chr&gt; \"大甲區\", \"大甲區\", \"大甲區\", \"大甲區\", \"大甲區\", \"大甲區\", \"大甲區\", \"大甲區\", \"大甲區…\n$ V_ID      &lt;chr&gt; \"66000110-002\", \"66000110-009\", \"66000110-021\", \"66000110-00…\n$ VILLAGE   &lt;chr&gt; \"大甲里\", \"中山里\", \"太白里\", \"孔門里\", \"文曲里\", \"文武里\", \"日南里\", \"平安里\", \"江南里…\n$ H_CNT     &lt;dbl&gt; 454, 1781, 406, 383, 355, 2071, 2039, 785, 461, 559, 769, 80…\n$ P_CNT     &lt;dbl&gt; 1255, 5252, 1471, 1001, 1264, 6687, 6739, 2642, 1618, 1977, …\n$ M_CNT     &lt;dbl&gt; 626, 2533, 758, 538, 640, 3244, 3406, 1310, 838, 983, 1273, …\n$ F_CNT     &lt;dbl&gt; 629, 2719, 713, 463, 624, 3443, 3333, 1332, 780, 994, 1239, …\n$ INFO_TIME &lt;chr&gt; \"108Y12M\", \"108Y12M\", \"108Y12M\", \"108Y12M\", \"108Y12M\", \"108Y…\n\n\n\nglimpse(village)\n\nRows: 622\nColumns: 11\n$ VILLCODE   &lt;chr&gt; \"66000110029\", \"66000120001\", \"66000120002\", \"66000120003\",…\n$ COUNTYNAME &lt;chr&gt; \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市\", \"臺中市\", \"臺中…\n$ TOWNNAME   &lt;chr&gt; \"大甲區\", \"清水區\", \"清水區\", \"清水區\", \"清水區\", \"清水區\", \"清水區\", \"清水區\", \"清水…\n$ VILLNAME   &lt;chr&gt; \"建興里\", \"鰲峰里\", \"靈泉里\", \"清水里\", \"文昌里\", \"南寧里\", \"西寧里\", \"北寧里\", \"中興…\n$ VILLENG    &lt;chr&gt; \"Jianxing Vil.\", \"Aofeng Vil.\", \"Lingquan Vil.\", \"Qingshui …\n$ COUNTYID   &lt;chr&gt; \"B\", \"B\", \"B\", \"B\", \"B\", \"B\", \"B\", \"B\", \"B\", \"B\", \"B\", \"B\",…\n$ COUNTYCODE &lt;chr&gt; \"66000\", \"66000\", \"66000\", \"66000\", \"66000\", \"66000\", \"6600…\n$ TOWNID     &lt;chr&gt; \"B11\", \"B12\", \"B12\", \"B12\", \"B12\", \"B12\", \"B12\", \"B12\", \"B1…\n$ TOWNCODE   &lt;chr&gt; \"66000110\", \"66000120\", \"66000120\", \"66000120\", \"66000120\",…\n$ NOTE       &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…\n$ geometry   &lt;MULTIPOLYGON [m]&gt; MULTIPOLYGON (((211953.9 27..., MULTIPOLYGON (…\n\n\n\npop2019 &lt;- pop2019 %&gt;%\n  mutate(V_ID = str_remove_all(\n    V_ID, \"-\"))\n\n\nvillage &lt;- village %&gt;%\n  left_join(pop2019,\n            by = join_by(\n              VILLCODE == V_ID))\n\nWe want to attach the population numbers to the village boundaries, but the village codes in the population file have a dash in them while the codes in the boundary file do not. The dash is removed first so the two codes can match, and then the join is done.\n\n\nCheck for Missing or Zero Values\n\nsummary(village)\n\n      VILLCODE       COUNTYNAME       TOWNNAME        VILLNAME  \n Length   :622   Length   :622   Length   :622   Length   :622  \n N.unique :622   N.unique :  1   N.unique : 28   N.unique :548  \n N.blank  :  0   N.blank  :  0   N.blank  :  0   N.blank  :  0  \n Min.nchar: 11   Min.nchar:  3   Min.nchar:  2   Min.nchar:  3  \n Max.nchar: 11   Max.nchar:  3   Max.nchar:  3   Max.nchar:  4  \n                                                 NAs      :  5  \n                                                                \n      VILLENG         COUNTYID       COUNTYCODE        TOWNID   \n Length   :622   Length   :622   Length   :622   Length   :622  \n N.unique :527   N.unique :  1   N.unique :  1   N.unique : 28  \n N.blank  :  0   N.blank  :  0   N.blank  :  0   N.blank  :  0  \n Min.nchar:  7   Min.nchar:  1   Min.nchar:  5   Min.nchar:  3  \n Max.nchar: 16   Max.nchar:  1   Max.nchar:  5   Max.nchar:  3  \n NAs      :  5                                                  \n                                                                \n      TOWNCODE          NOTE       COUNTY_ID           COUNTY   \n Length   :622   Length   :622   Min.   :66000   Length   :622  \n N.unique : 28   N.unique :  1   1st Qu.:66000   N.unique :  1  \n N.blank  :  0   N.blank  :  0   Median :66000   N.blank  :  0  \n Min.nchar:  8   Min.nchar:  5   Mean   :66000   Min.nchar:  3  \n Max.nchar:  8   Max.nchar:  5   3rd Qu.:66000   Max.nchar:  3  \n                 NAs      :617   Max.   :66000   NAs      :  5  \n                                 NAs    :5                      \n    TOWN_ID               TOWN          VILLAGE        H_CNT     \n Min.   :6.6e+07   Length   :622   Length   :622   Min.   : 180  \n 1st Qu.:6.6e+07   N.unique : 28   N.unique :548   1st Qu.: 724  \n Median :6.6e+07   N.blank  :  0   N.blank  :  0   Median :1335  \n Mean   :6.6e+07   Min.nchar:  2   Min.nchar:  3   Mean   :1592  \n 3rd Qu.:6.6e+07   Max.nchar:  3   Max.nchar:  4   3rd Qu.:2195  \n Max.   :6.6e+07   NAs      :  5   NAs      :  5   Max.   :7599  \n NAs    :5                                         NAs    :5     \n     P_CNT           M_CNT          F_CNT          INFO_TIME  \n Min.   :  487   Min.   : 257   Min.   : 230   Length   :622  \n 1st Qu.: 2139   1st Qu.:1095   1st Qu.:1053   N.unique :  1  \n Median : 3862   Median :1911   Median :1934   N.blank  :  0  \n Mean   : 4545   Mean   :2234   Mean   :2311   Min.nchar:  7  \n 3rd Qu.: 6151   3rd Qu.:3022   3rd Qu.:3171   Max.nchar:  7  \n Max.   :18652   Max.   :8741   Max.   :9911   NAs      :  5  \n NAs    :5       NAs    :5      NAs    :5                     \n          geometry  \n MULTIPOLYGON :622  \n epsg:3826    :  0  \n +proj=tmer...:  0  \n                    \n                    \n                    \n                    \n\n\n\nvillage &lt;- village %&gt;%\n  filter(!is.na(P_CNT)) \n\n\nany(is.na(village$H_CNT))\n\n[1] FALSE\n\nany(is.na(village$P_CNT))\n\n[1] FALSE\n\nany(is.na(village$M_CNT))\n\n[1] FALSE\n\nany(is.na(village$F_CNT))\n\n[1] FALSE\n\n\nFive villages have no population record, so their household and population counts came through empty after the join. The Huff calculation cannot work with empty values, so those five are dropped."
+  },
+  {
+    "objectID": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#computing-distance-matrix",
+    "href": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#computing-distance-matrix",
+    "title": "Market Area Analysis for Retail and Service Locations using Huff model",
+    "section": "Computing Distance Matrix",
+    "text": "Computing Distance Matrix\n\nvillage_center &lt;- st_point_on_surface(village)\n\n\ndistmat &lt;- st_distance(village_center, stores)\n\nRather than measure from the whole village shape, each village is reduced to one point, and the distance is measured from that point to every store. st_point_on_surface() is used instead of a plain centroid because a centroid of an oddly shaped village can land outside it, whereas this function always gives a point that sits inside the village.\n\nrownames(distmat) &lt;- village$`VILLCODE`\ncolnames(distmat) &lt;- stores$`Store_CD`\n\ndistmat_long &lt;- distmat %&gt;%\n  as.data.frame() %&gt;%\n  rownames_to_column(var = \"VILLCODE\") %&gt;%\n  pivot_longer(\n    cols = -VILLCODE,\n    names_to = \"Store_CD\",\n    values_to = \"distance\"\n  ) %&gt;%\n  mutate(distance = as.numeric(distance))\n\nThe distance matrix is a grid with villages down the side and stores across the top. The next step needs a long list instead, with one row for every village and store pair, so the grid is labelled with the village and store codes and then reshaped."
+  },
+  {
+    "objectID": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#preparing-interaction-matrix",
+    "href": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#preparing-interaction-matrix",
+    "title": "Market Area Analysis for Retail and Service Locations using Huff model",
+    "section": "Preparing Interaction Matrix",
+    "text": "Preparing Interaction Matrix\n\ninteraction_matrix &lt;- distmat_long %&gt;%\n  left_join(\n    stores %&gt;% \n      st_drop_geometry() %&gt;% \n      select(Store_CD, Store_size),\n    by = \"Store_CD\") %&gt;%\n  relocate(\n    distance, .after = last_col())\n\n\nsummary(interaction_matrix)\n\n      VILLCODE          Store_CD       Store_size     distance      \n Length   :17276   Length   :17276   Min.   :100   Min.   :  108.5  \n N.unique :  617   N.unique :   28   1st Qu.:100   1st Qu.: 6678.7  \n N.blank  :    0   N.blank  :    0   Median :100   Median :11965.3  \n Min.nchar:   11   Min.nchar:    2   Mean   :100   Mean   :12762.7  \n Max.nchar:   11   Max.nchar:    2   3rd Qu.:100   3rd Qu.:18122.3  \n                                     Max.   :100   Max.   :41395.4  \n\n\nThe MCI package wants one table with four things on every row: the village, the store, how attractive the store is, and how far apart they are. The store size is attached to each pair here. With 617 villages and 28 stores that makes 17,276 rows."
+  },
+  {
+    "objectID": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#computing-huff-model",
+    "href": "Hands_on_Ex/Hands_onEx08/hands_on_ex08.html#computing-huff-model",
+    "title": "Market Area Analysis for Retail and Service Locations using Huff model",
+    "section": "Computing Huff Model",
+    "text": "Computing Huff Model\n\nhuff_share &lt;- huff.shares(\n  interaction_matrix, \"VILLCODE\", \"Store_CD\", \n  \"Store_size\", \"distance\")\n\n\nhead(huff_share)\n\n# A tibble: 6 × 7\n  VILLCODE    Store_CD Store_size distance        U_ij sum_U_ij[,1]    p_ij\n  &lt;chr&gt;       &lt;chr&gt;         &lt;dbl&gt;    &lt;dbl&gt;       &lt;dbl&gt; &lt;list&gt;         &lt;dbl&gt;\n1 66000010001 BT              100    3807. 0.00000690  &lt;dbl [1]&gt;    0.0349 \n2 66000010001 CT              100    5337. 0.00000351  &lt;dbl [1]&gt;    0.0178 \n3 66000010001 DD              100   10762. 0.000000863 &lt;dbl [1]&gt;    0.00437\n4 66000010001 DK              100    4787. 0.00000436  &lt;dbl [1]&gt;    0.0221 \n5 66000010001 DL              100    3911. 0.00000654  &lt;dbl [1]&gt;    0.0331 \n6 66000010001 DR              100    5613. 0.00000317  &lt;dbl [1]&gt;    0.0161 \n\n\n\nhuff_share %&gt;%\n  group_by(VILLCODE) %&gt;%\n  summarise(total = sum(p_ij)) %&gt;%\n  summary()\n\n      VILLCODE       total  \n Length   :617   Min.   :1  \n N.unique :617   1st Qu.:1  \n N.blank  :  0   Median :1  \n Min.nchar: 11   Mean   :1  \n Max.nchar: 11   3rd Qu.:1  \n                 Max.   :1  \n\n\nThe new column p_ij is the probability that a resident of village i shops at store j. Every village’s probabilities across all 28 stores should add up to 1, since a resident has to pick one of them. The last chunk checks that, and the total should come out as 1 for every village.\n\nHow Much Does the Distance Decay Matter?\n\nhuff_lambda &lt;- map_dfr(c(-1, -2, -3), function(l) {\n  huff.shares(\n    interaction_matrix, \"VILLCODE\", \"Store_CD\",\n    \"Store_size\", \"distance\",\n    lambda = l) %&gt;%\n    group_by(VILLCODE) %&gt;%\n    summarise(top_share = max(p_ij)) %&gt;%\n    mutate(lambda = factor(l))\n})\n\n\nggplot(data = huff_lambda,\n       aes(x = top_share, fill = lambda)) +\n  geom_density(alpha = 0.4) +\n  labs(x = \"Probability of the most likely store\",\n       y = \"Density\",\n       fill = \"Lambda\")\n\n\n\n\n\n\n\n\n\nhuff_lambda %&gt;%\n  group_by(lambda) %&gt;%\n  summarise(median_top_share = median(top_share))\n\n# A tibble: 3 × 2\n  lambda median_top_share\n  &lt;fct&gt;             &lt;dbl&gt;\n1 -1                0.158\n2 -2                0.412\n3 -3                0.663\n\n\nThe writeup runs the model with the default distance decay (lambda of -2) and never says what that setting does. The more negative lambda is, the harder distance punishes a store. Here the model is run with -1, -2 and -3, and for each village we keep the probability of its single most likely store. If distance matters more, villages should lean harder on their nearest store, so the curve should shift to the right as lambda gets more negative.\n\n\nTrade Area Analysis for a Single Store\n\nmarket_share &lt;- huff_share %&gt;%\n  filter(Store_CD == \"BT\")\n\n\nTrade_area &lt;- village %&gt;%\n  left_join(market_share, by = \"VILLCODE\")\n\n\nselected_store &lt;- stores %&gt;%\n  filter(Store_CD == \"BT\")\n\nStore BT is picked out of the 28. Its probabilities are attached to the village boundaries so we can map how likely each village is to shop there.\n\ntm_shape(Trade_area) +\n  tm_polygons(fill = \"p_ij\",\n              fill.scale = tm_scale_intervals(\n                style = \"quantile\", \n                n = 10,\n                values = \"brewer.blues\"),\n              fill.legend = tm_legend(\n                title = \"Patronage Probability\")) +\n  tm_shape(selected_store) +\n    tm_dots(size = 0.3,\n            fill = \"red\",\n            col = \"black\") +\n  tm_title(\"Distribution of Patronage Probability of Store BT by village\") +\n  tm_layout(frame = TRUE) +\n  tm_borders(fill_alpha = 0.5) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha =0.2) \n\n\n\n\n\n\n\n\nThe darkest villages are the ones most likely to shop at BT, and they cluster around the red dot. The colour fades with distance, and it also fades faster wherever other stores are closer, because the competition takes away customers.\n\n\nTrade Areas of the Best and Worst Selling Stores\n\nstore_rank &lt;- stores %&gt;%\n  st_drop_geometry() %&gt;%\n  arrange(desc(Total_Sales))\n\ntop_store &lt;- store_rank$Store_CD[1]\nbottom_store &lt;- store_rank$Store_CD[nrow(store_rank)]\n\n\nmap_trade_area &lt;- function(store_code) {\n  ta &lt;- village %&gt;%\n    left_join(huff_share %&gt;% filter(Store_CD == store_code),\n              by = \"VILLCODE\")\n  st &lt;- stores %&gt;% filter(Store_CD == store_code)\n  \n  tm_shape(ta) +\n    tm_polygons(fill = \"p_ij\",\n                fill.scale = tm_scale_intervals(\n                  style = \"quantile\",\n                  n = 10,\n                  values = \"brewer.blues\"),\n                fill.legend = tm_legend(\n                  title = \"Patronage Probability\")) +\n    tm_shape(st) +\n    tm_dots(size = 0.3,\n            fill = \"red\",\n            col = \"black\") +\n    tm_title(paste(\"Trade area of store\", store_code)) +\n    tm_layout(frame = TRUE)\n}\n\n\ntmap_arrange(map_trade_area(top_store),\n             map_trade_area(bottom_store),\n             ncol = 2)\n\n\n\n\n\n\n\n\nStore BT was picked at random, so here are the same trade area maps for the best selling store on the left and the worst selling store on the right. Both are modelled as the same size, so any difference between the two maps comes from where each store sits. A store with lots of competitors nearby gets a smaller and paler trade area. This lets us see whether location alone seems to explain why one store sells more than the other.\n\n\nStore Sales Analysis\n\nhuff_share_pp &lt;- huff_share %&gt;%\n  left_join(village %&gt;% \n      st_drop_geometry() %&gt;% \n      select(VILLCODE, P_CNT),\n    by = \"VILLCODE\") %&gt;%\n  relocate(\n    distance, .after = last_col())\n\n\nhuff_total &lt;- shares.total(\n  huff_share_pp, \"VILLCODE\", \"Store_CD\",\n  \"p_ij\", \"P_CNT\")\n\n\nstore_sales_est &lt;- stores %&gt;%\n  left_join(huff_total,\n            by = join_by(\n              \"Store_CD\" == \"suppliers_single\"))\n\nAnother use of the Huff model is estimating how much each store should sell. Each village’s population is multiplied by its probability of shopping at the store, and those numbers are added up over all villages. The result, sum_E_j, is the model’s sales estimate for each store, which we can set against the real sales.\n\nstore_sales_nongeom &lt;- store_sales_est %&gt;% \n  st_drop_geometry()\n\n\nggscatterstats(\n  store_sales_nongeom,\n  x = sum_E_j,\n  y = Total_Sales)\n\n\n\n\n\n\n\n\nThe closer the dots sit to the line, the better the model’s estimate matches what the stores really sold. The correlation at the top of the plot sums that up in one number. Keep in mind that every store was treated as the same size, so the model only knows about location and competition.\n\nhuff_share_wider &lt;- huff_share %&gt;%\n  select(VILLCODE, Store_CD, p_ij) %&gt;%\n    pivot_wider(names_from = Store_CD, \n                values_from = p_ij)\n\nThis reshapes the probabilities into one row per village and one column per store. It is easier to scan, and it could be used for something like grouping villages by their shopping habits.\n\n\nWhat If Store Size Reflects Actual Sales?\n\ninteraction_matrix_sales &lt;- distmat_long %&gt;%\n  left_join(\n    stores %&gt;% \n      st_drop_geometry() %&gt;% \n      select(Store_CD, Total_Sales),\n    by = \"Store_CD\") %&gt;%\n  relocate(\n    distance, .after = last_col())\n\n\nhuff_share_sales &lt;- huff.shares(\n  interaction_matrix_sales, \"VILLCODE\", \"Store_CD\", \n  \"Total_Sales\", \"distance\")\n\n\nhuff_share_sales_pp &lt;- huff_share_sales %&gt;%\n  left_join(village %&gt;% \n      st_drop_geometry() %&gt;% \n      select(VILLCODE, P_CNT),\n    by = \"VILLCODE\") %&gt;%\n  relocate(distance, .after = last_col())\n\n\nhuff_total_sales &lt;- shares.total(\n  huff_share_sales_pp, \"VILLCODE\", \"Store_CD\",\n  \"p_ij\", \"P_CNT\")\n\n\nsales_compare &lt;- store_sales_nongeom %&gt;%\n  select(Store_CD, Total_Sales, sum_E_j) %&gt;%\n  rename(est_equal_size = sum_E_j) %&gt;%\n  left_join(\n    huff_total_sales %&gt;%\n      rename(Store_CD = suppliers_single,\n             est_by_sales = sum_E_j),\n    by = \"Store_CD\")\n\n\nsales_compare %&gt;%\n  summarise(\n    equal_size = cor(est_equal_size, Total_Sales),\n    sales_as_size = cor(est_by_sales, Total_Sales))\n\n  equal_size sales_as_size\n1  0.5764644     0.8992211\n\n\n\nsales_compare %&gt;%\n  pivot_longer(cols = c(est_equal_size, est_by_sales),\n               names_to = \"version\",\n               values_to = \"estimate\") %&gt;%\n  ggplot(aes(x = estimate, y = Total_Sales)) +\n  geom_point() +\n  geom_smooth(method = lm, se = FALSE) +\n  facet_wrap(~ version, scales = \"free_x\") +\n  labs(x = \"Estimated sales (Huff model)\",\n       y = \"Actual total sales\")\n\n\n\n\n\n\n\n\nEarlier we set every store to a size of 100 because the data has no real store sizes. Here the model is rerun with each store’s actual total sales standing in for how attractive it is, and the two versions are compared. This is only half a fair test, because sales are being used to predict sales, so a better match is partly built in. What it shows is how much of the gap in the first model came from treating every store as identical.\n\n\nWhich Stores Beat the Model?\n\nsales_model &lt;- lm(Total_Sales ~ sum_E_j, \n                  data = store_sales_nongeom,\n                  na.action = na.exclude)\n\n\nstore_perf &lt;- store_sales_est %&gt;%\n  mutate(residual = residuals(sales_model),\n         performance = factor(\n           ifelse(residual &gt; 0, \"Above model\", \"Below model\"),\n           levels = c(\"Above model\", \"Below model\")))\n\n\nstore_perf %&gt;%\n  st_drop_geometry() %&gt;%\n  select(Store_CD, Store_Name, Total_Sales, sum_E_j, residual) %&gt;%\n  arrange(desc(residual)) %&gt;%\n  slice(c(1:5, (n() - 4):n()))\n\n   Store_CD                   Store_Name Total_Sales   sum_E_j residual\n1        DD                Tung Lai (DD)     6863624  82681.16  2282179\n2        ZK Taichung Zhong Ke Delco (ZK)     6753073  88302.90  1862332\n3        WF        Taichung Wu Feng (WF)     5085611  59774.36  1764443\n4        LM                Lee-Ming (LM)     6958967  94948.05  1702626\n5        MT               Mei-Tsung (MT)     7969508 113788.08  1676634\n6        EH                           EH     1475963  59247.82 -1816236\n7        SQ                           SQ     2361102  87869.69 -2505804\n8        ZS Taichung Zhongxing East (ZS)     2771448 103062.93 -2931354\n9        QH                           QH     2968912 107656.67 -2986627\n10       TG          TG - Dajia Taichung     1753584  94177.03 -3460337\n\n\n\ntm_shape(town) +\n  tm_polygons(fill = \"grey95\") +\ntm_shape(store_perf) +\n  tm_dots(fill = \"performance\",\n          fill.scale = tm_scale_categorical(\n            values = c(\"blue\", \"red\")),\n          fill.legend = tm_legend(\n            title = \"Actual sales vs model\"),\n          size = 1) +\n  tm_title(\"Stores selling above or below the Huff model estimate\") +\n  tm_layout(frame = TRUE)\n\n\n\n\n\n\n\n\nInstead of only asking how well the model fits, this asks which stores do better or worse than it expects. The table lists the top five and bottom five, and the map marks stores that beat the model in blue and stores that fall short in red. A store selling more than its location predicts might have a strong brand or good management, and one selling less might have a problem the map cannot see. Those are the stores worth a closer look."
+  },
+  {
+    "objectID": "index.html#mapping-the-world-one-exercise-at-a-time",
+    "href": "index.html#mapping-the-world-one-exercise-at-a-time",
+    "title": "Home",
+    "section": "Mapping the world, one exercise at a time",
+    "text": "Mapping the world, one exercise at a time\n\nHands-on exercises, in-class work and take-home projects from my Geospatial Analysis module at SMU. Written in R, rendered with Quarto. Use the tabs above to explore.\n\nAbout me\n\n\n\n\n1.2966° N, 103.8502° E · Singapore Management University"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html",
+    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html",
+    "title": "In-class_Ex05",
     "section": "",
-    "text": "pacman::p_load(sf, ggstatsplot, tmap, tidyverse, knitr, GWmodel)"
+    "text": "pacman::p_load(sf, sfdep, tmap, tidyverse)"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#the-code",
-    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#the-code",
-    "title": "In-class_Ex04",
+    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#installing-and-loading-the-r-packages",
+    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#installing-and-loading-the-r-packages",
+    "title": "In-class_Ex05",
     "section": "",
-    "text": "pacman::p_load(sf, ggstatsplot, tmap, tidyverse, knitr, GWmodel)"
+    "text": "pacman::p_load(sf, sfdep, tmap, tidyverse)"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#preparing-the-data",
-    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#preparing-the-data",
-    "title": "In-class_Ex04",
-    "section": "Preparing the Data",
-    "text": "Preparing the Data\n\nImporting Hunan shapefile\n\nhunan_sf &lt;- st_read(dsn = \"data/geospatial\", layer = \"Hunan\")\n\nReading layer `Hunan' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex04\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 88 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 108.7831 ymin: 24.6342 xmax: 114.2544 ymax: 30.12812\nGeodetic CRS:  WGS 84\n\n\n\n\nimporting Hunan_2012 table\n\nhunan2012 &lt;- read_csv(\"data/aspatial/Hunan_2012.csv\")\n\n\n\nJoining Hunan and Hunan_2012\n\nhunan_sf &lt;- left_join(hunan_sf, hunan2012) %&gt;%\n  select(1:3, 7, 15, 16, 31, 32)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#mapping-gdppc",
-    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#mapping-gdppc",
-    "title": "In-class_Ex04",
-    "section": "Mapping GDPPC",
-    "text": "Mapping GDPPC"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#converting-to-spatialpolygondataframe",
-    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#converting-to-spatialpolygondataframe",
-    "title": "In-class_Ex04",
-    "section": "Converting to SpatialPolygonDataFrame",
-    "text": "Converting to SpatialPolygonDataFrame\n\nhunan_sp &lt;- hunan_sf %&gt;%\n  as_Spatial()"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geographically-weighted-summary-statistics-gsww",
-    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geographically-weighted-summary-statistics-gsww",
-    "title": "In-class_Ex04",
-    "section": "Geographically Weighted Summary Statistics (GSWW)",
-    "text": "Geographically Weighted Summary Statistics (GSWW)\n\nDetermine adaptive bandwidth\nCross-Validation\n\nbw_CV &lt;- bw.gwr(GDPPC ~ 1,\n                data = hunan_sp,\n                approach = \"CV\",\n                adaptive = TRUE,\n                kernel = \"bisquare\",\n                longlat = T) \n\nAdaptive bandwidth: 62 CV score: 15515442343 \nAdaptive bandwidth: 46 CV score: 14937956887 \nAdaptive bandwidth: 36 CV score: 14408561608 \nAdaptive bandwidth: 29 CV score: 14198527496 \nAdaptive bandwidth: 26 CV score: 13898800611 \nAdaptive bandwidth: 22 CV score: 13662299974 \nAdaptive bandwidth: 22 CV score: 13662299974 \n\n\n\nbw_CV\n\n[1] 22\n\n\nAICc\n\nbw_AIC &lt;- bw.gwr(GDPPC ~ 1,\n                data = hunan_sp,\n                approach = \"AICc\",\n                adaptive = TRUE,\n                kernel = \"bisquare\",\n                longlat = T) \n\nAdaptive bandwidth (number of nearest neighbours): 62 AICc value: 1923.156 \nAdaptive bandwidth (number of nearest neighbours): 46 AICc value: 1920.469 \nAdaptive bandwidth (number of nearest neighbours): 36 AICc value: 1917.324 \nAdaptive bandwidth (number of nearest neighbours): 29 AICc value: 1916.661 \nAdaptive bandwidth (number of nearest neighbours): 26 AICc value: 1914.897 \nAdaptive bandwidth (number of nearest neighbours): 22 AICc value: 1914.045 \nAdaptive bandwidth (number of nearest neighbours): 22 AICc value: 1914.045 \n\n\n\nbw_AIC\n\n[1] 22\n\n\n\n\nComputing geographically weighted summary statistics\nThe code chunk below computes geographically weighted summary statistics by using gwss() of GWmodel package. The analysis is performed using adaptive distance weighted. The distance is derived using AICc method and the kernel method used is bisquare.\n\ngw_stat &lt;- gwss(data = hunan_sp,\n                vars = \"GDPPC\",\n                bw = bw_AIC,\n                kernel = \"bisquare\",\n                adaptive = TRUE,\n                quantile = TRUE,\n                longlat = T) \n\n\n\nPreparing the output data\n\ngwstat_df &lt;- as.data.frame(gw_stat$SDF)\n\n\nhunan_gstat &lt;- cbind(hunan_sf, gwstat_df)\n\n\n\nVisualising geographically weighted summary statistics"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#gwss-with-fixed-bandwidth",
-    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#gwss-with-fixed-bandwidth",
-    "title": "In-class_Ex04",
-    "section": "GWSS with Fixed Bandwidth",
-    "text": "GWSS with Fixed Bandwidth\n\nDetermine fixed bandwidth\nCross Validation\n\nbw_CV &lt;- bw.gwr(GDPPC ~ 1, \n             data = hunan_sp,\n             approach = \"CV\",\n             adaptive = FALSE, \n             kernel = \"bisquare\", \n             longlat = T)\n\nFixed bandwidth: 357.4897 CV score: 16265191728 \nFixed bandwidth: 220.985 CV score: 14954930931 \nFixed bandwidth: 136.6204 CV score: 14134185837 \nFixed bandwidth: 84.48025 CV score: 13693362460 \nFixed bandwidth: 52.25585 CV score: Inf \nFixed bandwidth: 104.396 CV score: 13891052305 \nFixed bandwidth: 72.17162 CV score: 13577893677 \nFixed bandwidth: 64.56447 CV score: 14681160609 \nFixed bandwidth: 76.8731 CV score: 13444716890 \nFixed bandwidth: 79.77877 CV score: 13503296834 \nFixed bandwidth: 75.07729 CV score: 13452450771 \nFixed bandwidth: 77.98296 CV score: 13457916138 \nFixed bandwidth: 76.18716 CV score: 13442911302 \nFixed bandwidth: 75.76323 CV score: 13444600639 \nFixed bandwidth: 76.44916 CV score: 13442994078 \nFixed bandwidth: 76.02523 CV score: 13443285248 \nFixed bandwidth: 76.28724 CV score: 13442844774 \nFixed bandwidth: 76.34909 CV score: 13442864995 \nFixed bandwidth: 76.24901 CV score: 13442855596 \nFixed bandwidth: 76.31086 CV score: 13442847019 \nFixed bandwidth: 76.27264 CV score: 13442846793 \nFixed bandwidth: 76.29626 CV score: 13442844829 \nFixed bandwidth: 76.28166 CV score: 13442845238 \nFixed bandwidth: 76.29068 CV score: 13442844678 \nFixed bandwidth: 76.29281 CV score: 13442844691 \nFixed bandwidth: 76.28937 CV score: 13442844698 \nFixed bandwidth: 76.2915 CV score: 13442844676 \nFixed bandwidth: 76.292 CV score: 13442844679 \nFixed bandwidth: 76.29119 CV score: 13442844676 \nFixed bandwidth: 76.29099 CV score: 13442844676 \nFixed bandwidth: 76.29131 CV score: 13442844676 \nFixed bandwidth: 76.29138 CV score: 13442844676 \nFixed bandwidth: 76.29126 CV score: 13442844676 \nFixed bandwidth: 76.29123 CV score: 13442844676 \n\n\nAICc\n\nbw_AIC &lt;- bw.gwr(GDPPC ~ 1, \n             data = hunan_sp,\n             approach =\"AICc\",\n             adaptive = FALSE, \n             kernel = \"bisquare\", \n             longlat = T)\n\nFixed bandwidth: 357.4897 AICc value: 1927.631 \nFixed bandwidth: 220.985 AICc value: 1921.547 \nFixed bandwidth: 136.6204 AICc value: 1919.993 \nFixed bandwidth: 84.48025 AICc value: 1940.603 \nFixed bandwidth: 168.8448 AICc value: 1919.457 \nFixed bandwidth: 188.7606 AICc value: 1920.007 \nFixed bandwidth: 156.5362 AICc value: 1919.41 \nFixed bandwidth: 148.929 AICc value: 1919.527 \nFixed bandwidth: 161.2377 AICc value: 1919.392 \nFixed bandwidth: 164.1433 AICc value: 1919.403 \nFixed bandwidth: 159.4419 AICc value: 1919.393 \nFixed bandwidth: 162.3475 AICc value: 1919.394 \nFixed bandwidth: 160.5517 AICc value: 1919.391 \n\n\n\n\nComputing fixed bandwidth GWSS\n\ngwstat &lt;- gwss(data = hunan_sp,\n               vars = \"GDPPC\",\n               bw = bw_AIC,\n               kernel = \"bisquare\",\n               adaptive = FALSE,\n               quantile = TRUE,\n               longlat = T)\n\n\n\nPreparing the output data\n\ngwstat_df &lt;- as.data.frame(gwstat$SDF)\n\n\nhunan_gstat &lt;- cbind(hunan_sf, gwstat_df)\n\n\n\nVisualising fixed bandwidth geographically weighted mean\n\ntm_shape(hunan_gstat) +\n  tm_polygons(fill = \"GDPPC_LM\",\n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 5,\n                values = \"brewer.blues\"),\n              fill.legend = tm_legend(\n                title = \"local Mean\")) +\n  tm_borders(fill_alpha = 0.5) +\n  tm_title(\"Distribution of geographically wieghted mean\") + \n  tm_layout(legend.position = c(\"left\", \"bottom\"))"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geographically-weighted-correlation",
-    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geographically-weighted-correlation",
-    "title": "In-class_Ex04",
-    "section": "Geographically Weighted Correlation",
-    "text": "Geographically Weighted Correlation\n\nConventional Statistical Solution\n\nggscatterstats(\n  data = hunan2012, \n  x = Agri, \n  y = GDPPC,\n  xlab = \"Gross Agriculture Output\", \n  ylab = \"GDP per capita\", \n  label.var = County, \n  label.expression = Agri &gt; 10000 & GDPPC &gt; 50000, \n  point.label.args = list(alpha = 0.7, size = 4, color = \"grey50\"),\n  xfill = \"#CC79A7\", \n  yfill = \"#009E73\", \n  title = \"Relationship between GDP PC and Gross Agriculture Output\")\n\n\n\n\n\n\n\n\n\n\nGeoVisualization\n\ntm_shape(hunan_sf) + \n  tm_polygons(\n    fill = \"GDPPC\",\n    fill.scale = tm_scale_intervals(\n      n = 5,\n      style = \"quantile\",\n      values = \"brewer.oranges\")) +\n  tm_borders(fill_alpha = 0.25,\n             lwd = 0.5) +\n  tm_title(\"Distribution of GDP per capita\") +\n  tm_layout(legend.position = c(\"left\", \"bottom\"))"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geospatial-analytics-solution",
-    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#geospatial-analytics-solution",
-    "title": "In-class_Ex04",
-    "section": "Geospatial analytics solution",
-    "text": "Geospatial analytics solution\n\nDetermine the bandwidth\n\nbw &lt;- bw.gwr(GDPPC ~ GIO, \n             data = hunan_sp, \n             approach = \"AICc\",\n             kernel = \"bisquare\",\n             adaptive = TRUE)\n\nAdaptive bandwidth (number of nearest neighbours): 62 AICc value: 1870.235 \nAdaptive bandwidth (number of nearest neighbours): 46 AICc value: 1870.852 \nAdaptive bandwidth (number of nearest neighbours): 72 AICc value: 1869.744 \nAdaptive bandwidth (number of nearest neighbours): 78 AICc value: 1869.713 \nAdaptive bandwidth (number of nearest neighbours): 82 AICc value: 1869.604 \nAdaptive bandwidth (number of nearest neighbours): 84 AICc value: 1869.537 \nAdaptive bandwidth (number of nearest neighbours): 86 AICc value: 1869.647 \nAdaptive bandwidth (number of nearest neighbours): 83 AICc value: 1869.567 \nAdaptive bandwidth (number of nearest neighbours): 84 AICc value: 1869.537 \n\n\n\n\nComputing gwCorrelation\n\ngwstats &lt;- gwss(hunan_sp, \n                vars = c(\"GDPPC\", \"GIO\"), \n                bw = bw,\n                kernel = \"bisquare\",\n                adaptive = TRUE, \n                longlat = T)\n\n\n\nExtracting the Result\n\ngwstat_df &lt;- as.data.frame(gwstats$SDF) %&gt;%\n  select(c(12,13)) %&gt;%\n  rename(gwCorr = Corr_GDPPC.GIO,\n         gwSpearman = Spearman_rho_GDPPC.GIO)\n\n\nhunan_Corr &lt;- cbind(hunan_sf, gwstat_df)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#visualising-local-correlation",
-    "href": "In_Class_Ex/In_Class_Ex04/In-class_Ex04.html#visualising-local-correlation",
-    "title": "In-class_Ex04",
-    "section": "Visualising Local Correlation",
-    "text": "Visualising Local Correlation\n\ntm_shape(hunan_Corr) +\n  tm_polygons(fill = \"gwSpearman\",\n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 5,\n                values = \"brewer.blues\"),\n              fill.legend = tm_legend(\n                title = \"local Spearman Rho\")) +\n  tm_borders(fill_alpha = 0.5) +\n  tm_title(\"Local Spearman Rho\", \n  size = 2.0) +\n  tm_layout(frame = TRUE)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html",
-    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html",
-    "title": "In-class_Ex06",
-    "section": "",
-    "text": "pacman::p_load(sf, sfdep, tmap, \n               plotly, tidyverse, \n               Kendall)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#installing-and-loading-the-r-packages",
-    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#installing-and-loading-the-r-packages",
-    "title": "In-class_Ex06",
-    "section": "",
-    "text": "pacman::p_load(sf, sfdep, tmap, \n               plotly, tidyverse, \n               Kendall)"
-  },
-  {
-    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#import-shapefile-into-r-environment",
-    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#import-shapefile-into-r-environment",
-    "title": "In-class_Ex06",
+    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#import-shapefile-into-r-environment",
+    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#import-shapefile-into-r-environment",
+    "title": "In-class_Ex05",
     "section": "Import Shapefile into R Environment",
-    "text": "Import Shapefile into R Environment\n\nhunan &lt;- st_read(dsn = \"data/geospatial\", \n                 layer = \"Hunan\")  %&gt;% \n  st_transform(crs = 32650)\n\nReading layer `Hunan' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex06\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 88 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 108.7831 ymin: 24.6342 xmax: 114.2544 ymax: 30.12812\nGeodetic CRS:  WGS 84"
+    "text": "Import Shapefile into R Environment\n\nhunan &lt;- st_read(dsn = \"data/geospatial\", \n                 layer = \"Hunan\")\n\nReading layer `Hunan' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex05\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 88 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 108.7831 ymin: 24.6342 xmax: 114.2544 ymax: 30.12812\nGeodetic CRS:  WGS 84"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#import-attribute-table",
-    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#import-attribute-table",
-    "title": "In-class_Ex06",
-    "section": "Import Attribute table",
-    "text": "Import Attribute table\n\nGDPPC &lt;- read_csv(\n  \"data/aspatial/Hunan_GDPPC.csv\")"
+    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#import-csv-file-into-r-environment",
+    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#import-csv-file-into-r-environment",
+    "title": "In-class_Ex05",
+    "section": "Import CSV File into R Environment",
+    "text": "Import CSV File into R Environment\n\nhunan2012 &lt;- read_csv(\"data/aspatial/Hunan_2012.csv\")"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#creating-time-series-cube",
-    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#creating-time-series-cube",
-    "title": "In-class_Ex06",
-    "section": "Creating Time Series Cube",
-    "text": "Creating Time Series Cube\n\nGDPPC_st &lt;- spacetime(GDPPC, hunan,\n                      .loc_col = \"County\",\n                      .time_col = \"Year\")\n\n\nis_spacetime_cube(GDPPC_st)\n\n[1] TRUE"
+    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#performing-relational-join",
+    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#performing-relational-join",
+    "title": "In-class_Ex05",
+    "section": "Performing Relational Join",
+    "text": "Performing Relational Join\n\nhunan_GDPPC &lt;- hunan %&gt;%\n  left_join(hunan2012) %&gt;%\n  select(1:4, 7, 15, 33)"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#computing-gi",
-    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#computing-gi",
-    "title": "In-class_Ex06",
-    "section": "Computing Gi*",
-    "text": "Computing Gi*\n\nDerive the spatial weights\n\nGDPPC_nb &lt;- GDPPC_st %&gt;%\n  activate(\"geometry\") %&gt;%\n  mutate(nb = include_self(\n    st_contiguity(geometry)),\n    wt = st_inverse_distance(nb, \n                             geometry, \n                             scale = 1,\n                             alpha = 1),\n    .before = 1) %&gt;%\n  set_nbs(\"nb\") %&gt;%\n  set_wts(\"wt\")"
+    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#global-measures-of-spatial-association",
+    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#global-measures-of-spatial-association",
+    "title": "In-class_Ex05",
+    "section": "Global Measures of Spatial Association",
+    "text": "Global Measures of Spatial Association\n\nStep 1: Deriving Queen’s contiguity weights: sfdep methods\n\nwm_q &lt;- hunan_GDPPC %&gt;%\n  mutate(nb = st_contiguity(geometry),\n         wt = st_weights(nb,\n                         style = \"W\"),\n         .before = 1)\n\n\n\nStep 2: Computing Global Moran’I\n\nmoranI &lt;- global_moran(wm_q$GDPPC,\n                       wm_q$nb,\n                       wm_q$wt)\nglimpse(moranI)\n\nList of 2\n $ I: num 0.301\n $ K: num 7.64\n\n\n##Performing Global Moran’I permutation test\n\nset.seed(!234) \n\nglobal_moran_perm (wm_q$GDPPC, \n                   wm_q$nb,\n                   wm_q$wt,\n                   nsim = 99)\n\n\n    Monte-Carlo simulation of Moran I\n\ndata:  x \nweights: listw  \nnumber of simulations + 1: 100 \n\nstatistic = 0.30075, observed rank = 100, p-value &lt; 2.2e-16\nalternative hypothesis: two.sided"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#computing-gi-1",
-    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#computing-gi-1",
-    "title": "In-class_Ex06",
-    "section": "Computing Gi*",
-    "text": "Computing Gi*\n\ngi_stars &lt;- GDPPC_nb %&gt;% \n  group_by(Year) %&gt;% \n  mutate(gi_star = local_gstar_perm(\n    GDPPC, nb, wt)) %&gt;% \n  tidyr::unnest(gi_star)"
+    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#computing-local-morans-i",
+    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#computing-local-morans-i",
+    "title": "In-class_Ex05",
+    "section": "Computing local Moran’s I",
+    "text": "Computing local Moran’s I\n\nlisa &lt;- wm_q %&gt;%\n  mutate(local_moran = local_moran(\n    GDPPC, nb, wt, nsim = 99),\n    .before = 1) %&gt;%\n  unnest(local_moran)"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#mann-kendall-test",
-    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#mann-kendall-test",
-    "title": "In-class_Ex06",
-    "section": "Mann-Kendall Test",
-    "text": "Mann-Kendall Test\n\nMann-Kendall Test on Gi\n\ncbg &lt;- gi_stars %&gt;% \n  ungroup() %&gt;% \n  filter(County == \"Changsha\") |&gt; \n  select(County, Year, gi_star)\n\n\nggplot(data = cbg, \n       aes(x = Year, \n           y = gi_star)) +\n  geom_line() +\n  theme_light()\n\n\n\n\n\n\n\n\n\n\nInteractive Mann-Kendall Plot\n\np &lt;- ggplot(data = cbg, \n       aes(x = Year, \n           y = gi_star)) +\n  geom_line() +\n  theme_light()\n\nggplotly(p)\n\n\n\n\n\n\n\nPrinting Mann-Kendall test report\n\ncbg %&gt;%\n  summarise(mk = list(\n    unclass(\n      Kendall::MannKendall(gi_star)))) %&gt;% \n  tidyr::unnest_wider(mk)\n\n# A tibble: 1 × 5\n    tau      sl     S     D  varS\n  &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;\n1 0.485 0.00742    66  136.  589.\n\n\n\n\nMann-Kendall test data.frame\n\nehsa &lt;- gi_stars %&gt;%\n  group_by(County) %&gt;%\n  summarise(mk = list(\n    unclass(\n      Kendall::MannKendall(gi_star)))) %&gt;%\n  tidyr::unnest_wider(mk)\nhead(ehsa)\n\n# A tibble: 6 × 6\n  County        tau        sl     S     D  varS\n  &lt;chr&gt;       &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;\n1 Anhua      0.191  0.303        26  136.  589.\n2 Anren     -0.294  0.108       -40  136.  589.\n3 Anxiang    0      1             0  136.  589.\n4 Baojing   -0.691  0.000128    -94  136.  589.\n5 Chaling   -0.0882 0.650       -12  136.  589.\n6 Changning -0.750  0.0000318  -102  136.  589.\n\n\n\nemerging &lt;- ehsa %&gt;% \n  arrange(sl, abs(tau)) %&gt;% \n  slice(1:10)\nhead(emerging)\n\n# A tibble: 6 × 6\n  County        tau         sl     S     D  varS\n  &lt;chr&gt;       &lt;dbl&gt;      &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;\n1 Shuangfeng  0.868 0.00000143   118  136.  589.\n2 Xiangtan    0.868 0.00000143   118  136.  589.\n3 Xiangxiang  0.868 0.00000143   118  136.  589.\n4 Chengbu    -0.824 0.00000482  -112  136.  589.\n5 Dongan     -0.824 0.00000482  -112  136.  589.\n6 Wugang     -0.809 0.00000712  -110  136.  589."
+    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#plotting-lisa-map",
+    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#plotting-lisa-map",
+    "title": "In-class_Ex05",
+    "section": "Plotting LISA map",
+    "text": "Plotting LISA map\n\nlisa_sig &lt;- lisa %&gt;%\n  filter(p_ii_sim &lt; 0.05)\ntmap_mode(\"plot\")\ntm_shape(lisa) + \n  tm_polygons() +\n  tm_borders(fill_alpha = 0.5) +\ntm_shape(lisa_sig) + \n  tm_polygons(fill = \"mean\", \n              fill.legend = tm_legend(\n                text.size = 1.15,\n                width = 6)) +\n  tm_borders(fill_alpha = 0.4) + \n  tm_layout(legend.title.size = 1.25)"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#performing-emerging-hotspot-analysis",
-    "href": "In_Class_Ex/In_Class_Ex06/In_Class_Ex06.html#performing-emerging-hotspot-analysis",
-    "title": "In-class_Ex06",
-    "section": "Performing Emerging Hotspot Analysis",
-    "text": "Performing Emerging Hotspot Analysis\n\nehsa &lt;- emerging_hotspot_analysis(\n  x = GDPPC_st, \n  .var = \"GDPPC\", \n  k = 1, \n  nsim = 99\n)\n\n\nVisualising the distribution of EHSA classes\n\nggplot(data = ehsa,\n       aes(x = classification)) +\n  geom_bar()\n\n\n\n\n\n\n\n\n\n\nVisualizing EHSA\n\nhunan_ehsa &lt;- hunan %&gt;%\n  left_join(ehsa,\n            by = join_by(County == location))\n\n\nehsa_sig &lt;- hunan_ehsa  %&gt;%\n  filter(p_value &lt; 0.05)\ntmap_mode(\"plot\")\ntm_shape(hunan_ehsa) +\n  tm_polygons() +\n  tm_borders(fill_alpha = 0.5) +\ntm_shape(ehsa_sig) +\n  tm_fill(\"classification\") + \n  tm_borders(fill_alpha = 0.4)"
+    "objectID": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#visualizing-p-value-of-local",
+    "href": "In_Class_Ex/In_Class_Ex05/In_Class_Ex05.html#visualizing-p-value-of-local",
+    "title": "In-class_Ex05",
+    "section": "Visualizing p-value of local",
+    "text": "Visualizing p-value of local"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex08/data/geospatial/STORES_TC1.html",
-    "href": "In_Class_Ex/In_Class_Ex08/data/geospatial/STORES_TC1.html",
-    "title": "GAA-Abinav-Test",
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html",
+    "title": "In-class_Ex07",
     "section": "",
-    "text": "&lt;!DOCTYPE qgis PUBLIC ‘http://mrcc.com/qgis.dtd’ ‘SYSTEM’&gt;     dataset\n\n\n                PROJCRS[“TWD97 / TM2 zone 121”,BASEGEOGCRS[“TWD97”,DATUM[“Taiwan Datum 1997”,ELLIPSOID[“GRS 1980”,6378137,298.257222101,LENGTHUNIT[“metre”,1]]],PRIMEM[“Greenwich”,0,ANGLEUNIT[“degree”,0.0174532925199433]],ID[“EPSG”,3824]],CONVERSION[“Taiwan 2-degree TM zone 121”,METHOD[“Transverse Mercator”,ID[“EPSG”,9807]],PARAMETER[“Latitude of natural origin”,0,ANGLEUNIT[“degree”,0.0174532925199433],ID[“EPSG”,8801]],PARAMETER[“Longitude of natural origin”,121,ANGLEUNIT[“degree”,0.0174532925199433],ID[“EPSG”,8802]],PARAMETER[“Scale factor at natural origin”,0.9999,SCALEUNIT[“unity”,1],ID[“EPSG”,8805]],PARAMETER[“False easting”,250000,LENGTHUNIT[“metre”,1],ID[“EPSG”,8806]],PARAMETER[“False northing”,0,LENGTHUNIT[“metre”,1],ID[“EPSG”,8807]]],CS[Cartesian,2],AXIS[“easting (X)”,east,ORDER[1],LENGTHUNIT[“metre”,1]],AXIS[“northing (Y)”,north,ORDER[2],LENGTHUNIT[“metre”,1]],USAGE[SCOPE[“Engineering survey, topographic mapping.”],AREA[“Taiwan, Republic of China - between 120°E and 122°E, onshore and offshore - Taiwan Island.”],BBOX[20.41,119.99,26.72,122.06]],ID[“EPSG”,3826]] +proj=tmerc +lat_0=0 +lon_0=121 +k=0.9999 +x_0=250000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs 27234 3826 EPSG:3826 TWD97 / TM2 zone 121 tmerc EPSG:7019 false"
+    "text": "if (!requireNamespace(\"catchment\", quietly = TRUE)) {\n  remotes::install_github(\"uva-bi-sdad/catchment\")\n}\nlibrary(catchment)\n\n\npacman::p_load(sf, tidyverse, tmap, accessibility, catchment)"
   },
   {
-    "objectID": "In_Class_Ex/In_Class_Ex08/data/geospatial/VILLAGE_TC.html",
-    "href": "In_Class_Ex/In_Class_Ex08/data/geospatial/VILLAGE_TC.html",
-    "title": "GAA-Abinav-Test",
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#loading-r-package",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#loading-r-package",
+    "title": "In-class_Ex07",
     "section": "",
-    "text": "&lt;!DOCTYPE qgis PUBLIC ‘http://mrcc.com/qgis.dtd’ ‘SYSTEM’&gt;     dataset\n\n\n       PROJCRS[“TWD97 / TM2 zone 121”,BASEGEOGCRS[“TWD97”,DATUM[“Taiwan Datum 1997”,ELLIPSOID[“GRS 1980”,6378137,298.257222101,LENGTHUNIT[“metre”,1]]],PRIMEM[“Greenwich”,0,ANGLEUNIT[“degree”,0.0174532925199433]],ID[“EPSG”,3824]],CONVERSION[“Taiwan 2-degree TM zone 121”,METHOD[“Transverse Mercator”,ID[“EPSG”,9807]],PARAMETER[“Latitude of natural origin”,0,ANGLEUNIT[“degree”,0.0174532925199433],ID[“EPSG”,8801]],PARAMETER[“Longitude of natural origin”,121,ANGLEUNIT[“degree”,0.0174532925199433],ID[“EPSG”,8802]],PARAMETER[“Scale factor at natural origin”,0.9999,SCALEUNIT[“unity”,1],ID[“EPSG”,8805]],PARAMETER[“False easting”,250000,LENGTHUNIT[“metre”,1],ID[“EPSG”,8806]],PARAMETER[“False northing”,0,LENGTHUNIT[“metre”,1],ID[“EPSG”,8807]]],CS[Cartesian,2],AXIS[“easting (X)”,east,ORDER[1],LENGTHUNIT[“metre”,1]],AXIS[“northing (Y)”,north,ORDER[2],LENGTHUNIT[“metre”,1]],USAGE[SCOPE[“Engineering survey, topographic mapping.”],AREA[“Taiwan, Republic of China - between 120°E and 122°E, onshore and offshore - Taiwan Island.”],BBOX[20.41,119.99,26.72,122.06]],ID[“EPSG”,3826]] +proj=tmerc +lat_0=0 +lon_0=121 +k=0.9999 +x_0=250000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs 27234 3826 EPSG:3826 TWD97 / TM2 zone 121 tmerc EPSG:7019 false"
+    "text": "if (!requireNamespace(\"catchment\", quietly = TRUE)) {\n  remotes::install_github(\"uva-bi-sdad/catchment\")\n}\nlibrary(catchment)\n\n\npacman::p_load(sf, tidyverse, tmap, accessibility, catchment)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#importing-geospatial-data",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#importing-geospatial-data",
+    "title": "In-class_Ex07",
+    "section": "Importing Geospatial data",
+    "text": "Importing Geospatial data\n\nmpsz &lt;- st_read(dsn = \"data/geospatial\", \n                layer = \"MP14_SUBZONE_NO_SEA_PL\") %&gt;%\n  st_transform(crs = 3414)\n\nReading layer `MP14_SUBZONE_NO_SEA_PL' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex07\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 323 features and 15 fields\nGeometry type: MULTIPOLYGON\nDimension:     XY\nBounding box:  xmin: 2667.538 ymin: 15748.72 xmax: 56396.44 ymax: 50256.33\nProjected CRS: SVY21\n\n\n\nhexagons &lt;- st_read(dsn = \"data/geospatial\", \n                    layer = \"hexagons\") %&gt;%\n  st_transform(crs = 3414)\n\nReading layer `hexagons' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex07\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 3125 features and 6 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 2667.538 ymin: 21506.33 xmax: 50010.26 ymax: 50256.33\nProjected CRS: SVY21 / Singapore TM\n\n\n\neldercare &lt;- st_read(dsn = \"data/geospatial\", \n                     layer = \"ELDERCARE\") %&gt;%\n  st_transform(crs = 3414)\n\nReading layer `ELDERCARE' from data source \n  `D:\\1.Abinav\\1.SMU\\Term 4\\Geospatial Analysis\\Abinav0905\\GAA-Abinav-Test\\In_Class_Ex\\In_Class_Ex07\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 120 features and 19 fields\nGeometry type: POINT\nDimension:     XY\nBounding box:  xmin: 14481.92 ymin: 28218.43 xmax: 41665.14 ymax: 46804.9\nProjected CRS: SVY21 / Singapore TM\n\n\n\nODMatrix &lt;- read_csv(\"data/aspatial/OD_Matrix.csv\", skip = 0)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#geospatial-preparation",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#geospatial-preparation",
+    "title": "In-class_Ex07",
+    "section": "Geospatial Preparation",
+    "text": "Geospatial Preparation\n\nhexagons &lt;- hexagons %&gt;%\n  select(fid) %&gt;%\n  mutate(demand = 100) %&gt;%\n  rename(id = fid)\n\n\neldercare &lt;- eldercare %&gt;%\n  select(fid) %&gt;%\n  mutate(capacity = 100)\n\n\nODMatrix_tidied &lt;- ODMatrix %&gt;%\n  select(origin_id, destination_id, total_cost) %&gt;%\n  rename(from_id = origin_id,\n         to_id = destination_id,\n         dist = total_cost)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#computing-minimum-travel-distance-to-nearest-oldercare",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#computing-minimum-travel-distance-to-nearest-oldercare",
+    "title": "In-class_Ex07",
+    "section": "Computing Minimum Travel Distance to nearest oldercare",
+    "text": "Computing Minimum Travel Distance to nearest oldercare\n\ndist2closest &lt;- cost_to_closest(\n  travel_matrix = ODMatrix_tidied,\n  land_use_data = hexagons,\n  opportunity = \"demand\",\n  travel_cost = \"dist\",\n  n = 1,\n  group_by = character(0),\n  active = TRUE,\n  fill_missing_ids = TRUE\n)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#joining-output",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#joining-output",
+    "title": "In-class_Ex07",
+    "section": "Joining output",
+    "text": "Joining output\n\nhex_acc &lt;- hexagons %&gt;%\n  left_join(dist2closest) %&gt;%\n  rename(dist2closest = dist)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-closest-distance",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-closest-distance",
+    "title": "In-class_Ex07",
+    "section": "Mapping closest distance",
+    "text": "Mapping closest distance\n\nmapex &lt;- st_bbox(hex_acc)\ntm_shape(hex_acc,\n         bbox = mapex) + \n  tm_polygons(fill = \"dist2closest\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"Accessibility to the closest eldercare\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#converting-odmatrix-data-frame-in-a-matrix",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#converting-odmatrix-data-frame-in-a-matrix",
+    "title": "In-class_Ex07",
+    "section": "Converting ODMatrix data frame in a matrix",
+    "text": "Converting ODMatrix data frame in a matrix\n\ndistmat &lt;- ODMatrix %&gt;%\n  select(origin_id, destination_id, total_cost) %&gt;%\n  spread(destination_id, total_cost) %&gt;%\n  select(c(-c('origin_id')))\n\ndistmat_km &lt;- as.matrix(distmat/1000)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#two-step-floating-catchment-area",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#two-step-floating-catchment-area",
+    "title": "In-class_Ex07",
+    "section": "Two-Step Floating Catchment Area",
+    "text": "Two-Step Floating Catchment Area\n\ndf_2sfca &lt;- catchment_ratio(\n  consumers = hexagons$demand,\n  providers = eldercare$capacity,\n  cost = distmat_km,\n  max_cost = 5) %&gt;%\n  as.data.frame() %&gt;%\n  rename(\"2SFCA\" = \".\")"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-2sfca",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-2sfca",
+    "title": "In-class_Ex07",
+    "section": "Mapping 2SFCA",
+    "text": "Mapping 2SFCA\n\nhex_2SFCA &lt;- bind_cols(hexagons, df_2sfca) \ntm_shape(hex_2SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"2SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"2SFCA Accessibility measures\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#enhanced-2-step-floating-catchment",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#enhanced-2-step-floating-catchment",
+    "title": "In-class_Ex07",
+    "section": "Enhanced 2-Step Floating Catchment",
+    "text": "Enhanced 2-Step Floating Catchment\n\nstep_weights &lt;- list(c(5, .01), c(4, .05), c(3, .1), c(2, .4), c(1, 1))\ndf_e2sfca &lt;- catchment_ratio(\n  consumers = hexagons$demand,\n  providers = eldercare$capacity,\n  cost = distmat_km,\n  weight = step_weights) %&gt;%\n  as.data.frame() %&gt;%\n  rename(\"E2SFCA\" = \".\")"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-e2sfca",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-e2sfca",
+    "title": "In-class_Ex07",
+    "section": "Mapping E2SFCA",
+    "text": "Mapping E2SFCA\n\nhex_E2SFCA &lt;- bind_cols(hexagons, df_e2sfca) \ntm_shape(hex_E2SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"E2SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"E2SFCA Accessibility measures\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#kernel-density-guassian-2-step-floating-catchment-area",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#kernel-density-guassian-2-step-floating-catchment-area",
+    "title": "In-class_Ex07",
+    "section": "Kernel Density (Guassian) 2-Step Floating Catchment Area",
+    "text": "Kernel Density (Guassian) 2-Step Floating Catchment Area\n\ndf_kd2sfca &lt;- catchment_ratio(\n  consumers = hexagons$demand, \n  providers = eldercare$capacity,\n  cost = distmat_km,\n  weight = \"gaussian\") %&gt;%\n  as.data.frame() %&gt;%\n  rename(\"KD2SFCA\" = \".\")"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-kd2sfca",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#mapping-kd2sfca",
+    "title": "In-class_Ex07",
+    "section": "Mapping KD2SFCA",
+    "text": "Mapping KD2SFCA\n\nhex_KD2SFCA &lt;- bind_cols(hexagons, df_kd2sfca) \ntm_shape(hex_KD2SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"KD2SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"KDSFCA Accessibility measures\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#step-floating-catchment-area",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#step-floating-catchment-area",
+    "title": "In-class_Ex07",
+    "section": "3-Step Floating Catchment Area",
+    "text": "3-Step Floating Catchment Area\n\ndf_3sfca &lt;- catchment_ratio(\n  consumers = hexagons$demand, \n  providers = eldercare$capacity,\n  cost = distmat_km,\n  step_weights, \n  normalize_weight = TRUE) %&gt;%\n  as.data.frame() %&gt;%\n  rename(\"3SFCA\" = \".\")\n\n\nhex_3SFCA &lt;- bind_cols(hexagons, df_3sfca) \ntm_shape(hex_3SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"3SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"3SFCA Accessibility measures\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#modified-2-step-floating-catchment-area",
+    "href": "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.html#modified-2-step-floating-catchment-area",
+    "title": "In-class_Ex07",
+    "section": "Modified 2-Step Floating Catchment Area",
+    "text": "Modified 2-Step Floating Catchment Area\n\ndf_m2sfca &lt;- catchment_ratio(\n  consumers = hexagons$demand, \n  providers = eldercare$capacity,\n  cost = distmat_km,\n  step_weights, \n  adjust_providers = function(w) w^2) %&gt;%\n  as.data.frame() %&gt;%\n  rename(\"M2SFCA\" = \".\")\n\n\nhex_M2SFCA &lt;- bind_cols(hexagons, df_m2sfca) \ntm_shape(hex_M2SFCA,\n         bbox = mapex) + \n  tm_polygons(fill = \"M2SFCA\", \n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"-brewer.blues\")) +\n  tm_shape(eldercare) +\n  tm_dots(size = 0.3,\n          fill = \"red\",\n          col = \"black\") +\n  tm_title(\"M2SFCA Accessibility measures\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)"
   },
   {
     "objectID": "Take_Home_Ex/Take_HomeEx01/take_home_ex01-summary.html#research-question",
