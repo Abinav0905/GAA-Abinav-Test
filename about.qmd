@@ -1,9 +1,24 @@
 ---
-title: "About"
+title: "About Me"
+date-modified: last-modified
+format: html
+toc: false
 ---
 
-About this site
+## Hi, I'm Abinav
 
-```{r}
-1 + 1
-```
+I'm a student at Singapore Management University (SMU), currently taking ISSS626 Geospatial Analytics. I'm interested in working with data, and this module is where I learn to bring that into maps and spatial analysis.
+
+## About this site
+
+This site is my coursework portfolio for the module. It collects:
+
+- **Hands-on Exercises**, where I work through spatial data wrangling, thematic mapping, spatial autocorrelation, clustering, accessibility modelling and market area analysis.
+- **In-class Exercises**, which I complete during the lab sessions.
+- **Take-home Exercises**, which are longer analyses, each with a short summary and a technical report.
+
+Every page is written in R and rendered with Quarto, so the code, the output and my notes sit side by side. Use the tabs at the top to move around.
+
+## Tools I use
+
+R, RStudio, Quarto, Git and GitHub, with the site hosted on Vercel. The main R packages are sf, tmap, tidyverse, spdep and spatstat.

@@ -1,11 +1,34 @@
 ---
-title: "GAA-Abinav-Test"
+title: "Home"
+css: home.css
+page-layout: custom
+toc: false
+format:
+  html:
+    include-in-header:
+      - text: '<script>document.addEventListener("DOMContentLoaded",function(){document.body.classList.add("home")})</script>'
 ---
 
-This is a Quarto website.
+::: {.hero}
+::: {.hero-inner}
+<p class="kicker">ISSS626 &middot; Geospatial Analytics</p>
 
-To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
+## Mapping the world, one *exercise* at a time
 
-```{r}
-1 + 1
-```
+<p class="lede">Hands-on exercises, in-class work and take-home projects from my Geospatial Analysis module at SMU. Written in R, rendered with Quarto. Use the tabs above to explore.</p>
+
+<a class="cta" href="about.html">About me</a>
+
+<p class="coords">1.2966&deg; N, 103.8502&deg; E &middot; Singapore Management University</p>
+:::
+:::
+
+::: {.sec}
+<div class="grid">
+<div class="card"><span class="tag">Hands-on</span><b>Hands-on Exercises</b></div>
+<div class="card"><span class="tag">In-class</span><b>In-class Exercises</b></div>
+<div class="card"><span class="tag">Take-home</span><b>Take-home Exercises</b></div>
+</div>
+:::
+
+<div class="foot">Abinav &middot; SMU &middot; Built with R and Quarto</div>

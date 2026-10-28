@@ -1,0 +1,24 @@
+:root{--space:#02080b;--deep:#0b2530;--ink:#0d1f27;--teal:#5fb3a6;--clay:#e0703f;--mist:#eaf1f2;--card:#ffffff;--muted:#5d727a;--light:#b9cfd3}
+body.home{background:var(--mist)}
+.home #quarto-content,.home main{max-width:none!important}
+.home h1.title,.home .quarto-title-block{display:none}
+.home .page-columns,.home #quarto-document-content{display:block}
+.home #quarto-content>*{grid-column:screen-start/screen-end}
+.hero{position:relative;overflow:hidden;background:repeating-radial-gradient(ellipse 140% 100% at 78% 45%,transparent 0 26px,rgba(95,179,166,.13) 26px 27px),var(--space);padding:5.5rem 1.5rem 5rem;min-height:520px}
+.hero-inner,.sec{max-width:1040px;margin:0 auto;position:relative}
+.hero-inner{z-index:2}
+.earth{position:absolute;z-index:1;right:max(1vw,calc(50% - 600px));top:50%;transform:translateY(-50%);width:min(44vw,520px);height:auto;pointer-events:none}
+.kicker{font:600 .78rem/1 "Courier New",monospace;letter-spacing:.22em;text-transform:uppercase;color:var(--clay);margin:0 0 1.2rem}
+.hero h2{font:700 clamp(2.4rem,5.4vw,4.2rem)/1.05 Georgia,"Times New Roman",serif;color:#f2f7f7;margin:0 0 1.1rem;border:0;padding:0;max-width:34rem}
+.hero h2 em{color:var(--teal);font-style:italic}
+.hero p.lede{max-width:32rem;font-size:1.1rem;line-height:1.6;color:var(--light);margin:0 0 2rem}
+.cta{display:inline-block;background:var(--clay);color:#fff!important;padding:.8rem 1.4rem;text-decoration:none;font-weight:600;border-radius:2px;transition:transform .15s,background .15s}
+.cta:hover{background:#f08658;transform:translateY(-2px)}
+.coords{margin-top:2.4rem;font:.75rem "Courier New",monospace;color:var(--teal);letter-spacing:.08em}
+.sec{padding:3rem 1.5rem 0}
+.tag{font:600 .7rem "Courier New",monospace;letter-spacing:.2em;color:var(--clay);text-transform:uppercase}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1.1rem}
+.card{display:block;background:var(--card);border:1.5px solid var(--ink);border-radius:3px;padding:1.1rem 1.2rem;color:var(--ink);box-shadow:4px 4px 0 var(--teal)}
+.card b{display:block;font:700 1.05rem Georgia,serif;margin:.35rem 0 .15rem}
+.foot{max-width:1040px;margin:3rem auto 2.5rem;padding:1.2rem 1.5rem 0;border-top:1px solid #cfdcde;font:.8rem "Courier New",monospace;color:var(--muted)}
+@media(max-width:700px){.hero{padding:3.5rem 1.2rem 3rem}.earth{opacity:.35;width:90vw;right:-20vw}}
