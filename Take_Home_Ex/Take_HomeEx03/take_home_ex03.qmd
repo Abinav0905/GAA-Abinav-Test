@@ -420,7 +420,7 @@ cat("Range of % impact, exponential model:",
     round(range(pct_exp), 1), "\n")
 ```
 
-## Saved Figures 
+## Saved Figures
 
 Saves the main plots as image files so the presentation can show them without re-running the model.
 
